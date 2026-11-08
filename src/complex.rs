@@ -1,4 +1,4 @@
-use std::{fmt, ops::{Add, Div, Mul, Neg, Sub}};
+use std::{fmt, ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign}};
 
 // to make it clear this type must always be used for complex numbers
 pub type QFloat = f64;
@@ -6,6 +6,7 @@ pub type QFloat = f64;
 // Yes, I REALIZE that there is already a complex-num crate, but I refuse
 // to use it because I want to learn as much as I can about the mathematics
 // behind quantum computing.
+#[derive(Copy, Clone)]
 pub struct Complex {
     pub re: QFloat,
     pub im: QFloat,
@@ -23,12 +24,23 @@ impl Add for Complex {
         Self { re: self.re + rhs.re, im: self.im + rhs.im }
     }
 }
-
 impl Add<QFloat> for Complex {
     type Output = Self;
 
     fn add(self, rhs: QFloat) -> Self::Output {
         Self { re: self.re + rhs, im: self.im }
+    }
+}
+
+impl AddAssign for Complex {
+    fn add_assign(&mut self, rhs: Self) {
+        self.re += rhs.re;
+        self.im += rhs.im;
+    }
+}
+impl AddAssign<QFloat> for Complex {
+    fn add_assign(&mut self, rhs: QFloat) {
+        self.re += rhs;
     }
 }
 
@@ -40,12 +52,23 @@ impl Sub for Complex {
         Self { re: self.re - rhs.re, im: self.im - rhs.im }
     }
 }
-
 impl Sub<QFloat> for Complex {
     type Output = Self;
 
     fn sub(self, rhs: QFloat) -> Self::Output {
         Self { re: self.re - rhs, im: self.im }
+    }
+}
+
+impl SubAssign for Complex {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.re -= rhs.re;
+        self.im -= rhs.im;
+    }
+}
+impl SubAssign<QFloat> for Complex {
+    fn sub_assign(&mut self, rhs: QFloat) {
+        self.re -= rhs;
     }
 }
 
@@ -83,12 +106,29 @@ impl Mul for Complex {
         Self { re: a*c - b*d, im: a*d + b*c }
     }
 }
-
 impl Mul<QFloat> for Complex {
     type Output = Self;
 
     fn mul(self, rhs: QFloat) -> Self::Output {
         Self { re: self.re * rhs, im: self.im * rhs }
+    }
+}
+
+impl MulAssign for Complex {
+    fn mul_assign(&mut self, rhs: Self) {
+        let a = self.re;
+        let b = self.im;
+        let c = rhs.re;
+        let d = rhs.im;
+
+        self.re = a*c - b*d;
+        self.im = a*d + b*c;
+    }
+}
+impl MulAssign<QFloat> for Complex {
+    fn mul_assign(&mut self, rhs: QFloat) {
+        self.re *= rhs;
+        self.im *= rhs;
     }
 }
 
@@ -133,12 +173,38 @@ impl Div for Complex {
         Self { re: (a*c + b*d) / denom, im: (b*c - a*d) / denom }
     }
 }
-
 impl Div<QFloat> for Complex {
     type Output = Self;
 
     fn div(self, rhs: QFloat) -> Self::Output {
         Self { re: self.re / rhs, im: self.im / rhs }
+    }
+}
+
+impl DivAssign for Complex {
+    fn div_assign(&mut self, rhs: Self) {
+        let a = self.re;
+        let b = self.im;
+        let c = rhs.re;
+        let d = rhs.im;
+
+        let denom = c*c + d*d;
+
+        self.re = (a*c + b*d) / denom;
+        self.im = (b*c - a*d) / denom;
+    }
+}
+impl DivAssign<QFloat> for Complex {
+    fn div_assign(&mut self, rhs: QFloat) {
+        self.re /= rhs;
+        self.im /= rhs;
+    }
+}
+
+// Make it possible to convert a single float into a complex number
+impl From<QFloat> for Complex {
+    fn from(value: QFloat) -> Self {
+        Self { re: value, im: 0.0 }
     }
 }
 
@@ -183,8 +249,14 @@ impl Complex {
         (self.re*self.re + self.im*self.im).sqrt()
     }
 
-    pub fn normalize(&self) -> Self {
+    // Normalize the complex number, setting its modulus to 1
+    pub fn norm(&self) -> Self {
         Self { re: self.re / self.modulus(), im: self.im / self.modulus() }
+    }
+
+    // Invert the imaginary component of the number
+    pub fn conjugate(&self) -> Self {
+        Self { re: self.re, im: -self.im }
     }
 }
 
@@ -230,5 +302,26 @@ mod tests {
         let c = Complex::new(3.0, 2.0);
 
         assert_eq!(-c, Complex::new(-3.0, -2.0));
+    }
+
+    #[test]
+    fn test_modulus() {
+        let c = Complex::new(3.0, 4.0);
+
+        assert_eq!(c.modulus(), 5.0);
+    }
+
+    #[test]
+    fn test_norm() {
+        let c = Complex::new(3.0, 4.0);
+
+        assert_eq!(c.norm(), Complex::new(3.0 / 5.0, 4.0 / 5.0));
+    }
+
+    #[test]
+    fn test_conjugate() {
+        let c = Complex::new(3.0, 5.0);
+
+        assert_eq!(c.conjugate(), Complex::new(3.0, -5.0))
     }
 }
