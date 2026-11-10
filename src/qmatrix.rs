@@ -1,6 +1,6 @@
 use std::{fmt::{Debug, Display}, ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign}};
 
-use crate::{complex::{Complex, QFloat}, ops::{IDENTITY}};
+use crate::{complex::{Complex, QFloat}, gates::{IDENTITY}};
 
 #[derive(Copy, Clone)]
 pub struct QMatrix(pub Complex, pub Complex, pub Complex, pub Complex);
@@ -152,7 +152,7 @@ impl QMatrix {
 // Tests go here
 #[cfg(test)]
 pub mod tests {
-    use crate::ops::{C_I, C_ONE, C_ZERO};
+    use crate::gates::{C_I, C_ONE, C_ZERO};
 
 use super::*;
 

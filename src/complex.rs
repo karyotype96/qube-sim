@@ -103,7 +103,10 @@ impl Mul for Complex {
         let c = rhs.re;
         let d = rhs.im;
 
-        Self { re: a*c - b*d, im: a*d + b*c }
+        Self { 
+            re: (((a*c - b*d) * 1_000_000.0).round()) / 1_000_000.0, 
+            im: (((a*d + b*c) * 1_000_000.0).round()) / 1_000_000.0
+        }
     }
 }
 impl Mul<QFloat> for Complex {
@@ -121,8 +124,8 @@ impl MulAssign for Complex {
         let c = rhs.re;
         let d = rhs.im;
 
-        self.re = a*c - b*d;
-        self.im = a*d + b*c;
+        self.re = (((a*c - b*d) * 1_000_000.0).round()) / 1_000_000.0;
+        self.im = (((a*d + b*c) * 1_000_000.0).round()) / 1_000_000.0;
     }
 }
 impl MulAssign<QFloat> for Complex {
@@ -217,7 +220,7 @@ impl fmt::Display for Complex {
             " + "
         };
 
-        write!(f, "{} {} {}", self.re, sign, self.im.abs())
+        write!(f, "{} {} {}i", self.re, sign, self.im.abs())
     }
 }
 

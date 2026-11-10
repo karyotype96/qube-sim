@@ -1,4 +1,6 @@
-use std::{fmt::{Display, Error}, ops::MulAssign};
+use std::{fmt::{Display}, ops::MulAssign};
+
+use rand_distr::Uniform;
 
 use crate::{complex::Complex, qmatrix::QMatrix};
 
@@ -45,5 +47,15 @@ impl Qubit {
     */
     pub fn observe_state_debug(&self) -> (Complex, Complex) {
         self.state
+    }
+
+    /*
+        NOTE: This is used for actually measuring the state of a qubit. It
+        will lock the qubit into one of the basis vectors, |0> or |1>
+    */
+    pub fn observe_state(&mut self) -> (Complex, Complex) {
+        let (a, b) = (self.state.0 * self.state.0, self.state.1 * self.state.1);
+
+        todo!()
     }
 }
