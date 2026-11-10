@@ -52,7 +52,9 @@ pub fn H(q: &mut Qubit) {
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
+    use crate::qubit::QubitState;
+
+use super::*;
     
     #[test]
     fn test_apply_x() {
@@ -60,7 +62,7 @@ pub mod tests {
 
         X(&mut q);
 
-        assert_eq!(q.observe_state_debug(), (Complex::new(0.0, 0.0), Complex::new(1.0, 0.0)));
+        assert_eq!(q.observe_state_debug(), QubitState(Complex::new(0.0, 0.0), Complex::new(1.0, 0.0)));
     }
 
     #[test]
@@ -68,8 +70,6 @@ pub mod tests {
         let mut q = Qubit::new();
 
         H(&mut q);
-        println!("q = {q}");
         H(&mut q);
-        println!("q = {q}");
     }
 }

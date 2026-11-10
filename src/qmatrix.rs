@@ -154,7 +154,7 @@ impl QMatrix {
 pub mod tests {
     use crate::gates::{C_I, C_ONE, C_ZERO};
 
-use super::*;
+    use super::*;
 
     #[test]
     fn test_qmatrix_add() {
