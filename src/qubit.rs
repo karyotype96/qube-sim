@@ -1,27 +1,12 @@
-use std::{fmt::{Display}, ops::MulAssign};
+use std::{fmt::{Display}};
 
-use crate::{complex::Complex, qmatrix::QMatrix};
+use crate::{complex::Complex, gates::{KET_0, KET_1}, qubit_matrix::QubitMatrix};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct QubitState(pub Complex, pub Complex);
 
-const KET_0: QubitState = QubitState(
-    Complex { re: 1.0, im: 0.0 },
-    Complex { re: 0.0, im: 0.0 }
-);
-const KET_1: QubitState = QubitState(
-    Complex { re: 0.0, im: 0.0 },
-    Complex { re: 1.0, im: 0.0 }
-);
-
 pub struct Qubit {
     state: QubitState,
-}
-
-impl MulAssign<QMatrix> for Qubit {
-    fn mul_assign(&mut self, rhs: QMatrix) {
-        let _ = self.apply_matrix(rhs);
-    }
 }
 
 impl Display for QubitState {
@@ -37,7 +22,7 @@ impl Qubit {
         }
     }
 
-    pub fn apply_matrix(&mut self, m: QMatrix) -> Result<(), String> {
+    pub fn apply_matrix(&mut self, m: QubitMatrix) -> Result<(), String> {
         let state = self.state;
 
         if !m.is_unitary() {
@@ -60,8 +45,9 @@ impl Qubit {
     }
 
     /*
-        NOTE: This is used for actually measuring the state of a qubit. It
-        will lock the qubit into one of the basis vectors, |0> or |1>
+        NOTE: This is used for actually measuring the state of a qubit in the 
+        computational basis. It will lock the qubit into one of the basis vectors,
+        |0> or |1>.
     */
     pub fn observe_state(&mut self) -> QubitState {
         let a = ((self.state.0 * self.state.0).modulus() * 1_000_000.0).round() as usize;
