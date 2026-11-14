@@ -1,65 +1,32 @@
-use std::{fmt::{Display}};
+use crate::{complex::Complex};
 
-use crate::{complex::Complex, gates::{KET_0, KET_1}, qubit_matrix::QubitMatrix};
-
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct QubitState(pub Complex, pub Complex);
-
-pub struct Qubit {
-    state: QubitState,
+#[derive(Copy, Clone, Default, Debug)]
+pub enum QubitState {
+    #[default]
+    Unobserved,
+    Ket0,
+    Ket1
 }
 
-impl Display for QubitState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({})|0> + ({})|1>", self.0, self.1)
-    }
+#[derive(Copy, Clone, Debug)]
+pub struct Qubit(pub QubitState);
+
+pub struct QuantumCircuit {
+    qubits: Vec<Qubit>,
+    amplitudes: Vec<Complex>
 }
 
-impl Qubit {
-    pub fn new() -> Self {
-        Self {
-            state: KET_0
-        }
-    }
+impl QuantumCircuit {
+    pub fn new(qubit_count: usize) -> Self {
+        let mut s = Self {
+            qubits: vec![Qubit(QubitState::Unobserved); qubit_count],
+            amplitudes: vec![Complex::new(0.0, 0.0)],
+        };
 
-    pub fn apply_matrix(&mut self, m: QubitMatrix) -> Result<(), String> {
-        let state = self.state;
-
-        if !m.is_unitary() {
-            return Err(format!("apply_matrix: matrix is not unitary"));
+        if qubit_count > 0 {
+            s.amplitudes[0].re = 1.0;
         }
 
-        self.state.0 = m.0 * state.0 + m.1 * state.1;
-        self.state.1 = m.2 * state.0 + m.3 * state.1;
-
-        Ok(())
-    }
-
-    /*
-        NOTE: This should only be used for debugging and testing. In a real
-        quantum computer, observing the state would cause the qubit's state
-        to change to one of the basis vectors.
-    */
-    pub fn observe_state_debug(&self) -> QubitState {
-        self.state
-    }
-
-    /*
-        NOTE: This is used for actually measuring the state of a qubit in the 
-        computational basis. It will lock the qubit into one of the basis vectors,
-        |0> or |1>.
-    */
-    pub fn observe_state(&mut self) -> QubitState {
-        let a = ((self.state.0 * self.state.0).modulus() * 1_000_000.0).round() as usize;
-
-        let r = rand::random_range(0..=1_000_000);
-
-        if r < a {
-            self.state = KET_0;
-        } else {
-            self.state = KET_1;
-        }
-
-        self.state
+        s
     }
 }

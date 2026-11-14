@@ -1,216 +1,278 @@
-use std::{fmt::{Debug, Display}, ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign}};
+use std::{f64::consts::SQRT_2, fmt::{Debug, Write}};
 
-use crate::{complex::{Complex, QFloat}, gates::{C_IDENTITY}};
+use crate::{complex::Complex};
 
-#[derive(Copy, Clone)]
-pub struct QubitMatrix(pub Complex, pub Complex, pub Complex, pub Complex);
-
-// simple arithmetic functions
-impl Add for QubitMatrix {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0 + rhs.0, self.1 + rhs.1, self.2 + rhs.2, self.3 + rhs.3)
-    }
-}
-impl AddAssign for QubitMatrix {
-    fn add_assign(&mut self, rhs: Self) {
-        self.0 += rhs.0;
-        self.1 += rhs.1;
-        self.2 += rhs.2;
-        self.3 += rhs.3;
-    }
+pub struct QubitMatrix {
+    pub matrix: Vec<Vec<Complex>>
 }
 
-impl Sub for QubitMatrix {
-    type Output = Self;
+impl Debug for QubitMatrix {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut res = String::new();
+        for row in 0..self.get_size() {
+            res.push_str("[");
+            for col in 0..self.get_size() {
+                write!(&mut res, "{}", self.matrix[row][col]).unwrap();
+                if col < self.get_size()-1 {
+                    res.push_str(", ");
+                }
+            }
+            res.push_str("]\n");
+        }
 
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self(self.0 - rhs.0, self.1 - rhs.1, self.2 - rhs.2, self.3 - rhs.3)
-    }
-}
-impl SubAssign for QubitMatrix {
-    fn sub_assign(&mut self, rhs: Self) {
-        self.0 -= rhs.0;
-        self.1 -= rhs.1;
-        self.2 -= rhs.2;
-        self.3 -= rhs.3;
-    }
-}
-
-impl Mul for QubitMatrix {
-    type Output = Self;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        let (a, b, c, d) = (self.0, self.1, self.2, self.3);
-        let (e, f, g, h) = (rhs.0, rhs.1, rhs.2, rhs.3);
-
-        Self(a*e + b*g, a*f + b*h, c*e + d*g, c*f + d*h)
-    }
-}
-impl Mul<QFloat> for QubitMatrix {
-    type Output = Self;
-
-    fn mul(self, rhs: QFloat) -> Self::Output {
-        Self(self.0 * rhs, self.1 * rhs, self.2 * rhs, self.3 * rhs)
-    }
-}
-
-impl MulAssign for QubitMatrix {
-    fn mul_assign(&mut self, rhs: Self) {
-        let (a, b, c, d) = (self.0, self.1, self.2, self.3);
-        let (e, f, g, h) = (rhs.0, rhs.1, rhs.2, rhs.3);
-
-        self.0 = a*e + b*g;
-        self.1 = a*f + b*h;
-        self.2 = c*e + d*g;
-        self.3 = c*f + d*h;
-    }
-}
-impl MulAssign<QFloat> for QubitMatrix {
-    fn mul_assign(&mut self, rhs: QFloat) {
-        self.0 *= rhs;
-        self.1 *= rhs;
-        self.2 *= rhs;
-        self.3 *= rhs;
-    }
-}
-
-impl Div<QFloat> for QubitMatrix {
-    type Output = Self;
-    
-    fn div(self, rhs: QFloat) -> Self::Output {
-        Self(self.0 / rhs, self.1 / rhs, self.2 / rhs, self.3 / rhs)
-    }
-}
-impl DivAssign<QFloat> for QubitMatrix {
-    fn div_assign(&mut self, rhs: QFloat) {
-        self.0 /= rhs;
-        self.1 /= rhs;
-        self.2 /= rhs;
-        self.3 /= rhs;
+        write!(f, "{}", res)
     }
 }
 
 impl PartialEq for QubitMatrix {
     fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0 && self.1 == other.1 && self.2 == other.2 && self.3 == other.3
+        if self.get_size() != other.get_size() {
+            return false;
+        }
+
+        for row in 0..self.matrix.len() {
+            for col in 0..self.matrix[row].len() {
+                if self.matrix[row][col] != other.matrix[row][col] { return false; }
+            }
+        }
+
+        true
     }
 
     fn ne(&self, other: &Self) -> bool {
-        self.0 != other.0 || self.1 != other.1 || self.2 != other.2 || self.3 != other.3
-    }
-}
+        if self.get_size() != other.get_size() {
+            return true;
+        }
 
-// Printing functionality
+        for row in 0..self.matrix.len() {
+            for col in 0..self.matrix[row].len() {
+                if self.matrix[row][col] != other.matrix[row][col] { return true; }
+            }
+        }
 
-impl Display for QubitMatrix {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{},\t{}]\n[{},\t{}]", self.0, self.1, self.2, self.3)
-    }
-}
-
-impl Debug for QubitMatrix {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({}, {}, {}, {})", self.0, self.1, self.2, self.3)
+        false
     }
 }
 
 impl QubitMatrix {
-    pub fn new(a1: Complex, a2: Complex, b1: Complex, b2: Complex) -> Self {
-        Self(a1, a2, b1, b2)
+    // note: all qubit matrices are NxN in size
+    pub fn new(size: usize) -> Self {
+        let mut matrix: Vec<Vec<Complex>> = Vec::new();
+
+        for i in 0..size {
+            matrix.push(Vec::new());
+
+            for _ in 0..size {
+                matrix[i].push(Complex::new(0.0, 0.0))
+            }
+        }
+
+        Self {
+            matrix
+        }
     }
 
-    /* 
-        If we have a matrix:
-    
-        [a, b]
-        [c, d]
+    pub fn get_size(&self) -> usize {
+        self.matrix.len()
+    }
 
-        ... the transpose would be simply...
-
-        [a, c]
-        [b, d]
-    */
     pub fn transpose(&self) -> Self {
-        Self(self.0, self.2, self.1, self.3)
+        let mut transposed = Self::new(self.get_size());
+
+        for i in 0..self.matrix.len() {
+            for j in 0..self.matrix[i].len() {
+                transposed.matrix[j][i] = self.matrix[i][j]
+            }
+        }
+
+        transposed
     }
 
     pub fn conjugate(&self) -> Self {
-        Self(self.0.conjugate(), self.1.conjugate(), self.2.conjugate(), self.3.conjugate())
+        let mut conjugated = Self::new(self.get_size());
+
+        for i in 0..self.matrix.len() {
+            for j in 0..self.matrix[i].len() {
+                conjugated.matrix[i][j] = self.matrix[i][j].conjugate();
+            }
+        }
+
+        conjugated
     }
 
     pub fn adjoint(&self) -> Self {
         self.transpose().conjugate()
     }
 
-    pub fn is_unitary(&self) -> bool {
-        *self * self.adjoint() == C_IDENTITY
+    // static methods
+    pub fn tensor_product(matrix1: Self, matrix2: Self) -> Self {
+        let size = matrix1.get_size() * matrix2.get_size();
+
+        let (mat1_size, mat2_size) = (matrix1.get_size(), matrix2.get_size());
+
+        let mut new_matrix = QubitMatrix::new(size);
+
+        for row in 0..new_matrix.get_size() {
+            let mat1_row = row / mat2_size;
+            let mat2_row = row % mat2_size;
+            for col in 0..new_matrix.get_size() {
+                let mat1_col = col / mat1_size;
+                let mat2_col = col % mat2_size;
+
+                new_matrix.matrix[row][col] = matrix1.matrix[mat1_row][mat1_col] * matrix2.matrix[mat2_row][mat2_col];
+            }
+        }
+
+        new_matrix
+    }
+
+    pub fn identity_matrix(size: usize) -> Self {
+        let mut new_matrix = QubitMatrix::new(size);
+
+        for row in 0..new_matrix.get_size() {
+            for col in 0..new_matrix.get_size() {
+                new_matrix.matrix[row][col] = if row == col { Complex { re: 1.0, im: 0.0 } } else { Complex { re: 0.0, im: 0.0 } };
+            }
+        }
+
+        new_matrix
+    }
+
+    fn base_x_matrix() -> Self {
+        let mut x = QubitMatrix::new(2);
+
+        x.matrix[0][0] = Complex::new(0.0, 0.0);
+        x.matrix[0][1] = Complex::new(1.0, 0.0);
+        x.matrix[1][0] = Complex::new(1.0, 0.0);
+        x.matrix[1][1] = Complex::new(0.0, 0.0);
+
+        x
+    }
+
+    fn base_y_matrix() -> Self {
+        let mut y = QubitMatrix::new(2);
+
+        y.matrix[0][0] = Complex::new(0.0, 0.0);
+        y.matrix[0][1] = Complex::new(0.0, -1.0);
+        y.matrix[1][0] = Complex::new(0.0, 1.0);
+        y.matrix[1][1] = Complex::new(0.0, 0.0);
+
+        y
+    }
+
+    fn base_z_matrix() -> Self {
+        let mut z = QubitMatrix::new(2);
+
+        z.matrix[0][0] = Complex::new(1.0, 0.0);
+        z.matrix[0][1] = Complex::new(0.0, 0.0);
+        z.matrix[1][0] = Complex::new(0.0, 0.0);
+        z.matrix[1][1] = Complex::new(-1.0, 0.0);
+
+        z
+    }
+
+    fn base_h_matrix() -> Self {
+        let mut h = QubitMatrix::new(2);
+
+        h.matrix[0][0] = Complex::new(1.0 / SQRT_2, 0.0);
+        h.matrix[0][1] = Complex::new(1.0 / SQRT_2, 0.0);
+        h.matrix[1][0] = Complex::new(1.0 / SQRT_2, 0.0);
+        h.matrix[1][1] = Complex::new(-1.0 / SQRT_2, 0.0);
+
+        h
+    }
+
+    pub fn x_matrix(qubit_count: usize, qubit_index: usize) -> Self {
+        let cur_matrix = if qubit_count == qubit_index { Self::base_x_matrix() } else { Self::identity_matrix(2) };
+
+        if qubit_count <= 1 {
+            return cur_matrix;
+        }
+
+        let prev_matrix = Self::x_matrix(qubit_count - 1, qubit_index);
+        Self::tensor_product(prev_matrix, cur_matrix)
+    }
+
+    pub fn y_matrix(qubit_count: usize, qubit_index: usize) -> Self {
+        let cur_matrix = if qubit_count == qubit_index { Self::base_y_matrix() } else { Self::identity_matrix(2) };
+
+        if qubit_count <= 1 {
+            return cur_matrix;
+        }
+
+        let prev_matrix = Self::y_matrix(qubit_count - 1, qubit_index);
+        Self::tensor_product(prev_matrix, cur_matrix)
+    }
+
+    pub fn z_matrix(qubit_count: usize, qubit_index: usize) -> Self {
+        let cur_matrix = if qubit_count == qubit_index { Self::base_z_matrix() } else { Self::identity_matrix(2) };
+
+        if qubit_count <= 1 {
+            return cur_matrix;
+        }
+
+        let prev_matrix = Self::z_matrix(qubit_count - 1, qubit_index);
+        Self::tensor_product(prev_matrix, cur_matrix)
+    }
+
+    pub fn h_matrix(qubit_count: usize, qubit_index: usize) -> Self {
+        let cur_matrix = if qubit_count == qubit_index { Self::base_h_matrix() } else { Self::identity_matrix(2) };
+
+        if qubit_count <= 1 {
+            return cur_matrix;
+        }
+
+        let prev_matrix = Self::h_matrix(qubit_count - 1, qubit_index);
+        Self::tensor_product(prev_matrix, cur_matrix)
     }
 }
 
-// Tests go here
 #[cfg(test)]
 pub mod tests {
-    use crate::gates::{C_I, C_ONE, C_ZERO};
-
     use super::*;
 
     #[test]
-    fn test_matrix_add() {
-        let matrix1 = QubitMatrix::new(1.0.into(), 2.0.into(), 3.0.into(), 4.0.into());
-        let matrix2 = QubitMatrix::new(4.0.into(), 3.0.into(), 2.0.into(), 1.0.into());
+    fn test_tensor_product() {
+        let mut m1 = QubitMatrix::new(2);
 
-        assert_eq!(matrix1 + matrix2, QubitMatrix::new(5.0.into(), 5.0.into(), 5.0.into(), 5.0.into()))
+        m1.matrix[0][0] = Complex::new(1.0, 0.0);
+        m1.matrix[0][1] = Complex::new(2.0, 0.0);
+        m1.matrix[1][0] = Complex::new(3.0, 0.0);
+        m1.matrix[1][1] = Complex::new(4.0, 0.0);
+
+        let mut m2 = QubitMatrix::new(2);
+
+        m2.matrix[0][0] = Complex::new(5.0, 0.0);
+        m2.matrix[0][1] = Complex::new(6.0, 0.0);
+        m2.matrix[1][0] = Complex::new(7.0, 0.0);
+        m2.matrix[1][1] = Complex::new(8.0, 0.0);
+    
+        let mut res = QubitMatrix::new(4);
+
+        res.matrix[0][0] = Complex::new(5.0, 0.0);
+        res.matrix[0][1] = Complex::new(6.0, 0.0);
+        res.matrix[0][2] = Complex::new(10.0, 0.0);
+        res.matrix[0][3] = Complex::new(12.0, 0.0);
+        res.matrix[1][0] = Complex::new(7.0, 0.0);
+        res.matrix[1][1] = Complex::new(8.0, 0.0);
+        res.matrix[1][2] = Complex::new(14.0, 0.0);
+        res.matrix[1][3] = Complex::new(16.0, 0.0);
+        res.matrix[2][0] = Complex::new(15.0, 0.0);
+        res.matrix[2][1] = Complex::new(18.0, 0.0);
+        res.matrix[2][2] = Complex::new(20.0, 0.0);
+        res.matrix[2][3] = Complex::new(24.0, 0.0);
+        res.matrix[3][0] = Complex::new(21.0, 0.0);
+        res.matrix[3][1] = Complex::new(24.0, 0.0);
+        res.matrix[3][2] = Complex::new(28.0, 0.0);
+        res.matrix[3][3] = Complex::new(32.0, 0.0);
+
+        assert_eq!(QubitMatrix::tensor_product(m1, m2), res);
     }
 
     #[test]
-    fn test_matrix_sub() {
-        let matrix1 = QubitMatrix::new(2.0.into(), 3.0.into(), 4.0.into(), 5.0.into());
-        let matrix2 = QubitMatrix::new(1.0.into(), 1.0.into(), 2.0.into(), 2.0.into());
+    fn test_x_matrix() {
+        let m = QubitMatrix::x_matrix(3, 1);
 
-        assert_eq!(matrix1 - matrix2, QubitMatrix::new(1.0.into(), 2.0.into(), 2.0.into(), 3.0.into()))
-    }
-
-    #[test]
-    fn test_matrix_transpose() {
-        let matrix = QubitMatrix::new(1.0.into(), 2.0.into(), 3.0.into(), 4.0.into());
-
-        assert_eq!(matrix.transpose(), QubitMatrix::new(1.0.into(), 3.0.into(), 2.0.into(), 4.0.into()))
-    }
-
-    #[test]
-    fn test_matrix_conjugate() {
-        let matrix = QubitMatrix::new(
-            Complex::new(3.0, 5.0), 
-            Complex::new(2.0, -1.0),
-            Complex::new(-1.0, 5.0),
-            Complex::new(-2.0, -4.0)
-        );
-
-        let conjugate = QubitMatrix::new(
-            Complex::new(3.0, -5.0),
-            Complex::new(2.0, 1.0),
-            Complex::new(-1.0, -5.0),
-            Complex::new(-2.0, 4.0)
-        );
-
-        assert_eq!(matrix.conjugate(), conjugate);
-    }
-
-    #[test]
-    fn test_matrix_unitary() {
-        let y = QubitMatrix::new(
-            C_ZERO, -C_I,
-            C_I, C_ZERO
-        );
-
-        let z = QubitMatrix::new(
-            C_ONE, C_ZERO,
-            C_ZERO, -C_ONE
-        );
-
-        assert!(y.is_unitary());
-        assert!(z.is_unitary());
+        println!("{:?}", m);
     }
 }
