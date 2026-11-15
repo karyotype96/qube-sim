@@ -268,11 +268,4 @@ pub mod tests {
 
         assert_eq!(QubitMatrix::tensor_product(m1, m2), res);
     }
-
-    #[test]
-    fn test_x_matrix() {
-        let m = QubitMatrix::x_matrix(3, 1);
-
-        println!("{:?}", m);
-    }
 }

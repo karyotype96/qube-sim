@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Write};
 
-use crate::{complex::Complex, qubit::Qubit, qubit_matrix::QubitMatrix};
+use crate::{complex::Complex, qubit_matrix::QubitMatrix};
 
 pub struct QubitVector {
     pub vector: Vec<Complex>
