@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use crate::{qubit_matrix::QubitMatrix, qubit_vector::QubitVector};
+use crate::{complex::Complex, qubit_matrix::QubitMatrix, qubit_vector::QubitVector};
 
 #[derive(Copy, Clone, Default, Debug)]
 pub enum QubitState {
@@ -60,13 +60,14 @@ impl QuantumCircuit {
 
     #[allow(non_snake_case)]
     pub fn CNOT(&mut self, control: usize, target: usize) {
-        let actual_ctl = control - 1;
-        let actual_tgt = target - 1;
+        let qubit_count = self.qubit_count();
+
+        let actual_ctl = qubit_count.saturating_sub(control);
+        let actual_tgt = qubit_count.saturating_sub(target);
 
         let tmp_amps = self.amplitudes.vector.clone();
 
         for i in 0..tmp_amps.len() {
-            println!("i = {i}; {i} & (1 << {actual_ctl}) = {}", i & (1 << actual_ctl));
             if i & (1 << actual_ctl) > 0 {
                 let other_index = i ^ (1 << actual_tgt);
                 self.amplitudes.vector[i] = tmp_amps[other_index];
@@ -85,7 +86,14 @@ impl QuantumCircuit {
 
         let qubit_count = self.qubit_count();
 
+        let mut printed_values: Vec<Complex> = vec![Complex::new(0.0, 0.0); self.amplitudes.len()];
+
         for i in 0..self.amplitudes.len() {
+            let bit_rev_i = i.reverse_bits() >> (usize::BITS - qubit_count as u32);
+            printed_values[bit_rev_i] = self.amplitudes.vector[i];
+        }
+
+        for i in 0..printed_values.len() {
             write!(&mut res, "({})|{:0qubit_count$b}>", self.amplitudes.vector[i], i).unwrap();
             if i < self.amplitudes.len()-1 {
                 res.push_str(" + ");
@@ -141,14 +149,11 @@ pub mod tests {
 
     #[test]
     fn test_circuit() {
-        let mut qc = QuantumCircuit::new(2);
-        println!("qc (init): {}", qc.observe_debug());
+        let mut qc = QuantumCircuit::new(3);
+        println!("qc: {}", qc.observe_debug());
 
-        qc.H(1);
-        println!("qc (H): {}", qc.observe_debug());
-
-        qc.CNOT(2, 1);
-        println!("qc (CNOT): {}", qc.observe_debug());
+        qc.X(3);
+        println!("qc (X2) = {}", qc.observe_debug());
 
         let measured_result = qc.M();
         println!("result: {:?}", measured_result);
