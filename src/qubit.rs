@@ -58,6 +58,22 @@ impl QuantumCircuit {
         let _ = self.amplitudes.apply_matrix(h);
     }
 
+    #[allow(non_snake_case)]
+    pub fn CNOT(&mut self, control: usize, target: usize) {
+        let actual_ctl = control - 1;
+        let actual_tgt = target - 1;
+
+        let tmp_amps = self.amplitudes.vector.clone();
+
+        for i in 0..tmp_amps.len() {
+            println!("i = {i}; {i} & (1 << {actual_ctl}) = {}", i & (1 << actual_ctl));
+            if i & (1 << actual_ctl) > 0 {
+                let other_index = i ^ (1 << actual_tgt);
+                self.amplitudes.vector[i] = tmp_amps[other_index];
+            }
+        }
+    }
+
     /*
         WARNING: This is not the same as observing the states in the computational
         basis, which would change the state to either |0> or |1>. For this reason,
@@ -126,13 +142,13 @@ pub mod tests {
     #[test]
     fn test_circuit() {
         let mut qc = QuantumCircuit::new(2);
-        println!("qc: {}", qc.observe_debug());
+        println!("qc (init): {}", qc.observe_debug());
 
         qc.H(1);
-        println!("qc: {}", qc.observe_debug());
+        println!("qc (H): {}", qc.observe_debug());
 
-        qc.H(2);
-        println!("qc: {}", qc.observe_debug());
+        qc.CNOT(2, 1);
+        println!("qc (CNOT): {}", qc.observe_debug());
 
         let measured_result = qc.M();
         println!("result: {:?}", measured_result);

@@ -1,4 +1,5 @@
-use std::{fmt, ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign}};
+use core::fmt;
+use std::{fmt::Write, ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign}};
 
 // to make it clear this type must always be used for complex numbers
 pub type QFloat = f64;
@@ -220,7 +221,15 @@ impl fmt::Display for Complex {
             " + "
         };
 
-        write!(f, "{} {} {}i", self.re, sign, self.im.abs())
+        let mut res = String::new();
+
+        if self.im != 0.0 {
+            write!(&mut res, "{} {} {}i", self.re, sign, self.im.abs()).unwrap();
+        } else {
+            write!(&mut res, "{}", self.re).unwrap();
+        }
+
+        write!(f, "{}", res)
     }
 }
 
