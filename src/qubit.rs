@@ -1,6 +1,8 @@
 use std::fmt::Write;
 
-use crate::{complex::Complex, qubit_matrix::QubitMatrix, qubit_vector::QubitVector};
+use snafu::ensure;
+
+use crate::{complex::Complex, error_handling::QubeError, qubit_matrix::QubitMatrix, qubit_vector::{self, QubitVector}};
 
 #[derive(Copy, Clone, Default, Debug)]
 pub enum QubitState {
@@ -30,37 +32,80 @@ impl QuantumCircuit {
         self.qubits.len()
     }
 
+    /*
+        The Pauli X gate is roughly equivalent to the NOT gate in a classical computer.
+        Let's say we have a qubit in the state of a|0> + b|1>: the X gate would change
+        that to b|0> + a|1>. 
+    */
     #[allow(non_snake_case)]
-    pub fn X(&mut self, qubit_index: usize) {
+    pub fn X(&mut self, qubit_index: usize) -> Result<(), QubeError> {
+        if qubit_index > self.qubit_count() {
+            return Err(QubeError::QubitOutOfRange { index: qubit_index, max: self.qubit_count() });
+        }
+
         let x = QubitMatrix::x_matrix(self.qubit_count(), qubit_index);
 
         let _ = self.amplitudes.apply_matrix(x);
-    } 
 
+        Ok(())
+    }
+
+    /*
+        For the Pauli Y gate, imagine we have a qubit represented by a Bloch sphere. A
+        Y gate would rotate the state of the qubit around the Y axis by pi radians, 
+        effectively combining a bit flip with a phase change.
+    */
     #[allow(non_snake_case)]
-    pub fn Y(&mut self, qubit_index: usize) {
+    pub fn Y(&mut self, qubit_index: usize) -> Result<(), QubeError> {
+        if qubit_index > self.qubit_count() {
+            return Err(QubeError::QubitOutOfRange { index: qubit_index, max: self.qubit_count() });
+        }
+
         let y = QubitMatrix::y_matrix(self.qubit_count(), qubit_index);
 
         let _ = self.amplitudes.apply_matrix(y);
+
+        Ok(())
     }
 
     #[allow(non_snake_case)]
-    pub fn Z(&mut self, qubit_index: usize) {
+    pub fn Z(&mut self, qubit_index: usize) -> Result<(), QubeError> {
+        if qubit_index > self.qubit_count() {
+            return Err(QubeError::QubitOutOfRange { index: qubit_index, max: self.qubit_count() })
+        }
+
         let z = QubitMatrix::z_matrix(self.qubit_count(), qubit_index);
 
         let _ = self.amplitudes.apply_matrix(z);
+
+        Ok(())
     }
 
     #[allow(non_snake_case)]
-    pub fn H(&mut self, qubit_index: usize) {
+    pub fn H(&mut self, qubit_index: usize) -> Result<(), QubeError> {
+        if qubit_index > self.qubit_count() {
+            return Err(QubeError::QubitOutOfRange { index: qubit_index, max: self.qubit_count() })
+        }
+
         let h = QubitMatrix::h_matrix(self.qubit_count(), qubit_index);
 
         let _ = self.amplitudes.apply_matrix(h);
+
+        Ok(())
     }
 
     #[allow(non_snake_case)]
-    pub fn CNOT(&mut self, control: usize, target: usize) {
+    pub fn CNOT(&mut self, control: usize, target: usize) -> Result<(), QubeError> {
         let qubit_count = self.qubit_count();
+        if control == target {
+            return Err(QubeError::ControlEqualsTarget { index: control });
+        }
+        if control > self.qubit_count() {
+            return Err(QubeError::QubitOutOfRange { index: control, max: self.qubit_count() });
+        }
+        if target > self.qubit_count() {
+            return Err(QubeError::QubitOutOfRange { index: target, max: self.qubit_count() })
+        }
 
         let actual_ctl = qubit_count.saturating_sub(control);
         let actual_tgt = qubit_count.saturating_sub(target);
@@ -73,6 +118,47 @@ impl QuantumCircuit {
                 self.amplitudes.vector[i] = tmp_amps[other_index];
             }
         }
+
+        Ok(())
+    }
+
+    #[allow(non_snake_case)]
+    pub fn CCNOT(&mut self, control1: usize, control2: usize, target: usize) -> Result<(), QubeError> {
+        if control1 == control2 {
+            return Err(QubeError::Control1EqualsControl2 { index: control1 });
+        }
+        if control1 == target {
+            return Err(QubeError::ControlEqualsTarget { index: control1 });
+        }
+        if control2 == target {
+            return Err(QubeError::ControlEqualsTarget { index: control2 });
+        }
+
+        let qubit_count = self.qubit_count();
+        if control1 > qubit_count {
+            return Err(QubeError::QubitOutOfRange { index: control1, max: qubit_count });
+        }
+        if control2 > qubit_count {
+            return Err(QubeError::QubitOutOfRange { index: control2, max: qubit_count });
+        }
+        if target > qubit_count {
+            return Err(QubeError::QubitOutOfRange { index: target, max: qubit_count });
+        }
+
+        let actual_ctl1 = qubit_count.saturating_sub(control1);
+        let actual_ctl2 = qubit_count.saturating_sub(control2);
+        let actual_tgt = qubit_count.saturating_sub(target);
+
+        let tmp_amps = self.amplitudes.vector.clone();
+
+        for i in 0..tmp_amps.len() {
+            if i & (1 << actual_ctl1) > 0 && i & (1 << actual_ctl2) > 0 {
+                let other_index = i ^ (1 << actual_tgt);
+                self.amplitudes.vector[i] = tmp_amps[other_index];
+            }
+        }
+
+        Ok(())
     }
 
     /*
@@ -140,22 +226,5 @@ impl QuantumCircuit {
         measured.reverse();
 
         measured
-    }
-}
-
-#[cfg(test)]
-pub mod tests {
-    use super::*;
-
-    #[test]
-    fn test_circuit() {
-        let mut qc = QuantumCircuit::new(3);
-        println!("qc: {}", qc.observe_debug());
-
-        qc.X(3);
-        println!("qc (X2) = {}", qc.observe_debug());
-
-        let measured_result = qc.M();
-        println!("result: {:?}", measured_result);
     }
 }

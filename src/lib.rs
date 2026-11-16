@@ -1,5 +1,8 @@
-pub mod complex;
+mod complex;
 
 pub mod qubit;
-pub mod qubit_vector;
-pub mod qubit_matrix;
+mod qubit_vector;
+mod qubit_matrix;
+
+pub mod error_handling;
+pub mod sampler;
