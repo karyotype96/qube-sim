@@ -76,6 +76,7 @@ impl QubitMatrix {
         self.matrix.len()
     }
 
+    #[allow(unused)]
     pub fn transpose(&self) -> Self {
         let mut transposed = Self::new(self.get_size());
 
@@ -88,6 +89,7 @@ impl QubitMatrix {
         transposed
     }
 
+    #[allow(unused)]
     pub fn conjugate(&self) -> Self {
         let mut conjugated = Self::new(self.get_size());
 
@@ -100,6 +102,7 @@ impl QubitMatrix {
         conjugated
     }
 
+    #[allow(unused)]
     pub fn adjoint(&self) -> Self {
         self.transpose().conjugate()
     }
