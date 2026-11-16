@@ -1,8 +1,6 @@
 use std::fmt::Write;
 
-use snafu::ensure;
-
-use crate::{complex::Complex, error_handling::QubeError, qubit_matrix::QubitMatrix, qubit_vector::{self, QubitVector}};
+use crate::{complex::Complex, error_handling::QubeError, qubit_matrix::QubitMatrix, qubit_vector::{QubitVector}};
 
 #[derive(Copy, Clone, Default, Debug)]
 pub enum QubitState {

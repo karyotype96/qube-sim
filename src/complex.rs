@@ -262,11 +262,13 @@ impl Complex {
     }
 
     // Normalize the complex number, setting its modulus to 1
+    #[allow(unused)]
     pub fn norm(&self) -> Self {
         Self { re: self.re / self.modulus(), im: self.im / self.modulus() }
     }
 
     // Invert the imaginary component of the number
+    #[allow(unused)]
     pub fn conjugate(&self) -> Self {
         Self { re: self.re, im: -self.im }
     }

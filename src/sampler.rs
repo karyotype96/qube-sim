@@ -29,7 +29,7 @@ impl Sampler {
         for i in sorted_keys {
             let value = probs.get(i).unwrap_or(&0);
 
-            println!("\t{:0qubit_count$b}: {}%", i, (*value as f64) / (count as f64));
+            println!("\t|{:0qubit_count$b}>: {}%", i, 100.0 * (*value as f64) / (count as f64));
         }
     }
 }
