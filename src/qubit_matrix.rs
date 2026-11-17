@@ -179,6 +179,7 @@ impl QubitMatrix {
         new_matrix
     }
 
+    // base matrices go here - these should be private
     pub fn base_global_phase_matrix(theta: QFloat) -> Self {
         let mut new_matrix = QubitMatrix::identity_matrix(2);
 
@@ -237,6 +238,17 @@ impl QubitMatrix {
         h
     }
 
+    fn base_s_matrix() -> Self {
+        let mut s = QubitMatrix::new(2);
+
+        s.matrix[0][0] = Complex::new(1.0, 0.0);
+        s.matrix[0][1] = Complex::new(0.0, 0.0);
+        s.matrix[1][0] = Complex::new(0.0, 0.0);
+        s.matrix[1][1] = Complex::new(0.0, 1.0);
+
+        s
+    }
+
     fn base_rx_matrix(theta: QFloat) -> Self {
         let mut rx = QubitMatrix::new(2);
 
@@ -270,59 +282,47 @@ impl QubitMatrix {
         rz
     }
 
-    pub fn global_phase_matrix(qubit_count: usize, qubit_index: usize, theta: QFloat) -> Self {
-        let cur_matrix = if qubit_count == qubit_index { Self::base_global_phase_matrix(theta) } else { Self::identity_matrix(2) };
+    // cut down on some boilerplate
+    pub fn get_full_matrix(m: Self, qubit_count: usize, qubit_index: usize) -> Self {
+        let cur_matrix = if qubit_count == qubit_index { m.copy() } else { Self::identity_matrix(2) };
 
         if qubit_count <= 1 {
             return cur_matrix;
         }
 
-        let prev_matrix = Self::global_phase_matrix(qubit_count - 1, qubit_index, theta);
+        let prev_matrix = Self::get_full_matrix(m, qubit_count - 1, qubit_index);
         Self::tensor_product(prev_matrix, cur_matrix)
+    }
+
+    // public matrix functions (use in conjunction with base ones)
+    pub fn global_phase_matrix(qubit_count: usize, qubit_index: usize, theta: QFloat) -> Self {
+        let ph = Self::base_global_phase_matrix(theta);
+        Self::get_full_matrix(ph, qubit_count, qubit_index)
     }
 
     pub fn x_matrix(qubit_count: usize, qubit_index: usize) -> Self {
-        let cur_matrix = if qubit_count == qubit_index { Self::base_x_matrix() } else { Self::identity_matrix(2) };
-
-        if qubit_count <= 1 {
-            return cur_matrix;
-        }
-
-        let prev_matrix = Self::x_matrix(qubit_count - 1, qubit_index);
-        Self::tensor_product(prev_matrix, cur_matrix)
+        let x = Self::base_x_matrix();
+        Self::get_full_matrix(x, qubit_count, qubit_index)
     }
 
     pub fn y_matrix(qubit_count: usize, qubit_index: usize) -> Self {
-        let cur_matrix = if qubit_count == qubit_index { Self::base_y_matrix() } else { Self::identity_matrix(2) };
-
-        if qubit_count <= 1 {
-            return cur_matrix;
-        }
-
-        let prev_matrix = Self::y_matrix(qubit_count - 1, qubit_index);
-        Self::tensor_product(prev_matrix, cur_matrix)
+        let y = Self::base_y_matrix();
+        Self::get_full_matrix(y, qubit_count, qubit_index)
     }
 
     pub fn z_matrix(qubit_count: usize, qubit_index: usize) -> Self {
-        let cur_matrix = if qubit_count == qubit_index { Self::base_z_matrix() } else { Self::identity_matrix(2) };
-
-        if qubit_count <= 1 {
-            return cur_matrix;
-        }
-
-        let prev_matrix = Self::z_matrix(qubit_count - 1, qubit_index);
-        Self::tensor_product(prev_matrix, cur_matrix)
+        let z = Self::base_z_matrix();
+        Self::get_full_matrix(z, qubit_count, qubit_index)
     }
 
     pub fn h_matrix(qubit_count: usize, qubit_index: usize) -> Self {
-        let cur_matrix = if qubit_count == qubit_index { Self::base_h_matrix() } else { Self::identity_matrix(2) };
+        let h = Self::base_h_matrix();
+        Self::get_full_matrix(h, qubit_count, qubit_index)
+    }
 
-        if qubit_count <= 1 {
-            return cur_matrix;
-        }
-
-        let prev_matrix = Self::h_matrix(qubit_count - 1, qubit_index);
-        Self::tensor_product(prev_matrix, cur_matrix)
+    pub fn s_matrix(qubit_count: usize, qubit_index: usize) -> Self {
+        let s = Self::base_s_matrix();
+        Self::get_full_matrix(s, qubit_count, qubit_index)
     }
 
     pub fn rx_matrix(qubit_count: usize, qubit_index: usize, theta: QFloat) -> Self {

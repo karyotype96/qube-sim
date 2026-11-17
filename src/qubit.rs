@@ -97,6 +97,18 @@ impl QuantumCircuit {
         Ok(())
     }
 
+    pub fn S(&mut self, qubit_index: usize) -> Result<(), QubeError> {
+        if qubit_index > self.qubit_count() {
+            return Err(QubeError::QubitOutOfRange { index: qubit_index, max: self.qubit_count() })
+        }
+
+        let s = QubitMatrix::s_matrix(self.qubit_count(), qubit_index);
+
+        let _ = self.amplitudes.apply_matrix(s);
+
+        Ok(())
+    }
+
     #[allow(non_snake_case)]
     pub fn Rx(&mut self, qubit_index: usize, theta: QFloat) -> Result<(), QubeError> {
         if qubit_index > self.qubit_count() {
