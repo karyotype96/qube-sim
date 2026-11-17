@@ -1,6 +1,6 @@
 use std::{f64::consts::SQRT_2, fmt::{Debug, Write}, ops::Mul};
 
-use crate::{complex::{Complex, QFloat}};
+use crate::{complex::{Complex, QFloat}, qubit};
 
 pub struct QubitMatrix {
     pub matrix: Vec<Vec<Complex>>
@@ -179,6 +179,20 @@ impl QubitMatrix {
         new_matrix
     }
 
+    pub fn base_global_phase_matrix(theta: QFloat) -> Self {
+        let mut new_matrix = QubitMatrix::identity_matrix(2);
+
+        let phase_factor = Complex::new(0.0, theta).exp();
+
+        for i in 0..new_matrix.get_size() {
+            for j in 0..new_matrix.get_size() {
+                new_matrix.matrix[i][j] *= phase_factor;
+            }
+        }
+
+        new_matrix
+    }
+
     fn base_x_matrix() -> Self {
         let mut x = QubitMatrix::new(2);
 
@@ -254,6 +268,17 @@ impl QubitMatrix {
         rz.matrix[1][1] = Complex::new(0.0, theta / 2.0).exp();
 
         rz
+    }
+
+    pub fn global_phase_matrix(qubit_count: usize, qubit_index: usize, theta: QFloat) -> Self {
+        let cur_matrix = if qubit_count == qubit_index { Self::base_global_phase_matrix(theta) } else { Self::identity_matrix(2) };
+
+        if qubit_count <= 1 {
+            return cur_matrix;
+        }
+
+        let prev_matrix = Self::global_phase_matrix(qubit_count - 1, qubit_index, theta);
+        Self::tensor_product(prev_matrix, cur_matrix)
     }
 
     pub fn x_matrix(qubit_count: usize, qubit_index: usize) -> Self {

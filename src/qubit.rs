@@ -30,6 +30,21 @@ impl QuantumCircuit {
         self.qubits.len()
     }
 
+    // global phase matrix, included for completeness in case it's
+    // REALLY needed for some reason
+    #[allow(non_snake_case)]
+    pub fn Gphase(&mut self, qubit_index: usize, theta: QFloat) -> Result<(), QubeError> {
+        if qubit_index > self.qubit_count() {
+            return Err(QubeError::QubitOutOfRange { index: qubit_index, max: self.qubit_count() });
+        }
+
+        let ph = QubitMatrix::global_phase_matrix(self.qubit_count(), qubit_index, theta);
+
+        let _ = self.amplitudes.apply_matrix(ph);
+
+        Ok(())
+    }
+
     #[allow(non_snake_case)]
     pub fn X(&mut self, qubit_index: usize) -> Result<(), QubeError> {
         if qubit_index > self.qubit_count() {
