@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{fmt::Write, ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign}};
+use std::{f64::consts::E, fmt::Write, ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign}};
 
 // to make it clear this type must always be used for complex numbers
 pub type QFloat = f64;
@@ -271,6 +271,14 @@ impl Complex {
     #[allow(unused)]
     pub fn conjugate(&self) -> Self {
         Self { re: self.re, im: -self.im }
+    }
+
+    // raise e (2.71828...) to the power of the number
+    pub fn exp(&self) -> Self {
+        let re = E.powf(self.re);
+        let im = Complex::new(self.im.cos(), self.im.sin());
+
+        im * re
     }
 }
 

@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use crate::{complex::Complex, error_handling::QubeError, qubit_matrix::QubitMatrix, qubit_vector::{QubitVector}};
+use crate::{complex::{Complex, QFloat}, error_handling::QubeError, qubit_matrix::QubitMatrix, qubit_vector::QubitVector};
 
 #[derive(Copy, Clone, Default, Debug)]
 pub enum QubitState {
@@ -30,11 +30,6 @@ impl QuantumCircuit {
         self.qubits.len()
     }
 
-    /*
-        The Pauli X gate is roughly equivalent to the NOT gate in a classical computer.
-        Let's say we have a qubit in the state of a|0> + b|1>: the X gate would change
-        that to b|0> + a|1>. 
-    */
     #[allow(non_snake_case)]
     pub fn X(&mut self, qubit_index: usize) -> Result<(), QubeError> {
         if qubit_index > self.qubit_count() {
@@ -48,11 +43,6 @@ impl QuantumCircuit {
         Ok(())
     }
 
-    /*
-        For the Pauli Y gate, imagine we have a qubit represented by a Bloch sphere. A
-        Y gate would rotate the state of the qubit around the Y axis by pi radians, 
-        effectively combining a bit flip with a phase change.
-    */
     #[allow(non_snake_case)]
     pub fn Y(&mut self, qubit_index: usize) -> Result<(), QubeError> {
         if qubit_index > self.qubit_count() {
@@ -82,13 +72,52 @@ impl QuantumCircuit {
     #[allow(non_snake_case)]
     pub fn H(&mut self, qubit_index: usize) -> Result<(), QubeError> {
         if qubit_index > self.qubit_count() {
-            return Err(QubeError::QubitOutOfRange { index: qubit_index, max: self.qubit_count() })
+            return Err(QubeError::QubitOutOfRange { index: qubit_index, max: self.qubit_count() });
         }
 
         let h = QubitMatrix::h_matrix(self.qubit_count(), qubit_index);
 
         let _ = self.amplitudes.apply_matrix(h);
 
+        Ok(())
+    }
+
+    #[allow(non_snake_case)]
+    pub fn Rx(&mut self, qubit_index: usize, theta: QFloat) -> Result<(), QubeError> {
+        if qubit_index > self.qubit_count() {
+            return Err(QubeError::QubitOutOfRange { index: qubit_index, max: self.qubit_count() });
+        }
+
+        let rx = QubitMatrix::rx_matrix(self.qubit_count(), qubit_index, theta);
+
+        let _ = self.amplitudes.apply_matrix(rx);
+        
+        Ok(())
+    }
+
+    #[allow(non_snake_case)]
+    pub fn Ry(&mut self, qubit_index: usize, theta: QFloat) -> Result<(), QubeError> {
+        if qubit_index > self.qubit_count() {
+            return Err(QubeError::QubitOutOfRange { index: qubit_index, max: self.qubit_count() });
+        }
+
+        let ry = QubitMatrix::ry_matrix(self.qubit_count(), qubit_index, theta);
+
+        let _ = self.amplitudes.apply_matrix(ry);
+        
+        Ok(())
+    }
+
+    #[allow(non_snake_case)]
+    pub fn Rz(&mut self, qubit_index: usize, theta: QFloat) -> Result<(), QubeError> {
+        if qubit_index > self.qubit_count() {
+            return Err(QubeError::QubitOutOfRange { index: qubit_index, max: self.qubit_count() });
+        }
+
+        let rz = QubitMatrix::rz_matrix(self.qubit_count(), qubit_index, theta);
+
+        let _ = self.amplitudes.apply_matrix(rz);
+        
         Ok(())
     }
 
@@ -159,6 +188,32 @@ impl QuantumCircuit {
         Ok(())
     }
 
+    /* Custom one-qubit gate */
+    #[allow(non_snake_case)]
+    pub fn Custom1(&mut self, qubit_index: usize, matrix: QubitMatrix) -> Result<(), QubeError> {
+        let size = matrix.get_size();
+        
+        if size != 2 {
+            return Err(QubeError::OneQubitCustomGateNot2x2);
+        }
+
+        if !matrix.is_unitary() {
+            return Err(QubeError::OneQubitCustomGateNotUnitary);
+        }
+
+        let mut start_matrix = if qubit_index == 0 { matrix.copy() } else { QubitMatrix::identity_matrix(size) };
+
+        for i in 0..self.qubit_count() {
+            let m = if qubit_index == i { matrix.copy() } else { QubitMatrix::identity_matrix(size) };
+
+            start_matrix = QubitMatrix::tensor_product(start_matrix, m);
+        }
+
+        let _ = self.amplitudes.apply_matrix(start_matrix);
+
+        Ok(())
+    }
+
     /*
         WARNING: This is not the same as observing the states in the computational
         basis, which would change the state to either |0> or |1>. For this reason,
@@ -173,6 +228,12 @@ impl QuantumCircuit {
         let mut printed_values: Vec<Complex> = vec![Complex::new(0.0, 0.0); self.amplitudes.len()];
 
         for i in 0..self.amplitudes.len() {
+            /* 
+                the bits needs to be reversed for each printed value on the screen because
+                the usual intuition in a quantum circuit is that in a ket, |abc>, a is qubit
+                0, b is qubit 1, etc., whereas the intuition in a classical computer is the
+                opposite
+            */
             let bit_rev_i = i.reverse_bits() >> (usize::BITS - qubit_count as u32);
             printed_values[bit_rev_i] = self.amplitudes.vector[i];
         }

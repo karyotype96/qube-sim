@@ -1,6 +1,8 @@
 use qube_sim::{qubit::QuantumCircuit, sampler::Sampler};
 
 fn main() {
+    println!("Simulating quantum entanglement...\n");
+
     Sampler::print_samples(|| {
         let mut qc = QuantumCircuit::new(2);
 
@@ -8,5 +10,5 @@ fn main() {
         let _ = qc.CNOT(1, 2);
 
         qc.M()
-    }, 10000);
+    }, 100000);
 }

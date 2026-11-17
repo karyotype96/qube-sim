@@ -11,5 +11,11 @@ pub enum QubeError {
     ControlEqualsTarget { index: usize },
 
     #[snafu(display("CCNOT gate control index 1 equals control index 2: {}", index))]
-    Control1EqualsControl2 { index: usize }
+    Control1EqualsControl2 { index: usize },
+
+    #[snafu(display("One-qubit custom gate matrix is not 2x2"))]
+    OneQubitCustomGateNot2x2,
+
+    #[snafu(display("One-qubit custom gate matrix not unitary"))]
+    OneQubitCustomGateNotUnitary,
 }
