@@ -149,7 +149,7 @@ impl QubitMatrix {
     pub fn tensor_product(matrix1: Self, matrix2: Self) -> Self {
         let size = matrix1.get_size() * matrix2.get_size();
 
-        let (mat1_size, mat2_size) = (matrix1.get_size(), matrix2.get_size());
+        let mat2_size = matrix2.get_size();
 
         let mut new_matrix = QubitMatrix::new(size);
 
@@ -157,7 +157,7 @@ impl QubitMatrix {
             let mat1_row = row / mat2_size;
             let mat2_row = row % mat2_size;
             for col in 0..new_matrix.get_size() {
-                let mat1_col = col / mat1_size;
+                let mat1_col = col / mat2_size;
                 let mat2_col = col % mat2_size;
 
                 new_matrix.matrix[row][col] = matrix1.matrix[mat1_row][mat1_col] * matrix2.matrix[mat2_row][mat2_col];
@@ -312,66 +312,57 @@ impl QubitMatrix {
     }
 
     pub fn x_matrix(qubit_count: usize, qubit_index: usize) -> Self {
+        let actual_index = qubit_count - qubit_index + 1;
         let x = Self::base_x_matrix();
-        Self::get_full_matrix(x, qubit_count, qubit_index)
+        Self::get_full_matrix(x, qubit_count, actual_index)
     }
 
     pub fn y_matrix(qubit_count: usize, qubit_index: usize) -> Self {
+        let actual_index = qubit_count - qubit_index + 1;
         let y = Self::base_y_matrix();
-        Self::get_full_matrix(y, qubit_count, qubit_index)
+        Self::get_full_matrix(y, qubit_count, actual_index)
     }
 
     pub fn z_matrix(qubit_count: usize, qubit_index: usize) -> Self {
+        let actual_index = qubit_count - qubit_index + 1;
         let z = Self::base_z_matrix();
-        Self::get_full_matrix(z, qubit_count, qubit_index)
+        Self::get_full_matrix(z, qubit_count, actual_index)
     }
 
     pub fn h_matrix(qubit_count: usize, qubit_index: usize) -> Self {
+        let actual_index = qubit_count - qubit_index + 1;
         let h = Self::base_h_matrix();
-        Self::get_full_matrix(h, qubit_count, qubit_index)
+        Self::get_full_matrix(h, qubit_count, actual_index)
     }
 
     pub fn s_matrix(qubit_count: usize, qubit_index: usize) -> Self {
+        let actual_index = qubit_count - qubit_index + 1;
         let s = Self::base_s_matrix();
-        Self::get_full_matrix(s, qubit_count, qubit_index)
+        Self::get_full_matrix(s, qubit_count, actual_index)
     }
 
     pub fn sqrtx_matrix(qubit_count: usize, qubit_index: usize) -> Self {
+        let actual_index = qubit_count - qubit_index + 1;
         let sqrtx = Self::base_sqrtx_matrix();
-        Self::get_full_matrix(sqrtx, qubit_count, qubit_index)
+        Self::get_full_matrix(sqrtx, qubit_count, actual_index)
     }
 
     pub fn rx_matrix(qubit_count: usize, qubit_index: usize, theta: QFloat) -> Self {
-        let cur_matrix = if qubit_count == qubit_index { Self::base_rx_matrix(theta) } else { Self::identity_matrix(2) };
-
-        if qubit_count <= 1 {
-            return cur_matrix;
-        }
-
-        let prev_matrix = Self::rx_matrix(qubit_count - 1, qubit_index, theta);
-        Self::tensor_product(prev_matrix, cur_matrix)
+        let actual_index = qubit_count - qubit_index + 1;
+        let rx = Self::base_rx_matrix(theta);
+        Self::get_full_matrix(rx, qubit_count, actual_index)
     }
 
     pub fn ry_matrix(qubit_count: usize, qubit_index: usize, theta: QFloat) -> Self {
-        let cur_matrix = if qubit_count == qubit_index { Self::base_ry_matrix(theta) } else { Self::identity_matrix(2) };
-
-        if qubit_count <= 1 {
-            return cur_matrix;
-        }
-
-        let prev_matrix = Self::ry_matrix(qubit_count - 1, qubit_index, theta);
-        Self::tensor_product(prev_matrix, cur_matrix)
+        let actual_index = qubit_count - qubit_index + 1;
+        let ry = Self::base_ry_matrix(theta);
+        Self::get_full_matrix(ry, qubit_count, actual_index)
     }
 
     pub fn rz_matrix(qubit_count: usize, qubit_index: usize, theta: QFloat) -> Self {
-        let cur_matrix = if qubit_count == qubit_index { Self::base_rz_matrix(theta) } else { Self::identity_matrix(2) };
-
-        if qubit_count <= 1 {
-            return cur_matrix;
-        }
-
-        let prev_matrix = Self::rz_matrix(qubit_count - 1, qubit_index, theta);
-        Self::tensor_product(prev_matrix, cur_matrix)
+        let actual_index = qubit_count - qubit_index + 1;
+        let rz = Self::base_rz_matrix(theta);
+        Self::get_full_matrix(rz, qubit_count, actual_index)
     }
 }
 

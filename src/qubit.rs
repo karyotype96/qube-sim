@@ -173,21 +173,24 @@ impl QuantumCircuit {
         Ok(())
     }
 
+    // controlled NOT
     #[allow(non_snake_case)]
     pub fn CNOT(&mut self, control: usize, target: usize) -> Result<(), QubeError> {
         let qubit_count = self.qubit_count();
         if control == target {
             return Err(QubeError::ControlEqualsTarget { index: control });
         }
-        if control > self.qubit_count() {
-            return Err(QubeError::QubitOutOfRange { index: control, max: self.qubit_count() });
+        if control > qubit_count {
+            return Err(QubeError::QubitOutOfRange { index: control, max: qubit_count });
         }
-        if target > self.qubit_count() {
-            return Err(QubeError::QubitOutOfRange { index: target, max: self.qubit_count() })
+        if target > qubit_count {
+            return Err(QubeError::QubitOutOfRange { index: target, max: qubit_count })
         }
 
-        let actual_ctl = qubit_count.saturating_sub(control);
-        let actual_tgt = qubit_count.saturating_sub(target);
+        // let actual_ctl = qubit_count.saturating_sub(control);
+        // let actual_tgt = qubit_count.saturating_sub(target);
+        let actual_ctl = control.saturating_sub(1);
+        let actual_tgt = target.saturating_sub(1);
 
         let tmp_amps = self.amplitudes.vector.clone();
 
@@ -195,6 +198,61 @@ impl QuantumCircuit {
             if i & (1 << actual_ctl) > 0 {
                 let other_index = i ^ (1 << actual_tgt);
                 self.amplitudes.vector[i] = tmp_amps[other_index];
+            }
+        }
+
+        Ok(())
+    }
+
+    // anti-controlled NOT
+    #[allow(non_snake_case)]
+    pub fn ACNOT(&mut self, control: usize, target: usize) -> Result<(), QubeError> {
+        let qubit_count = self.qubit_count();
+        if control == target {
+            return Err(QubeError::ControlEqualsTarget { index: control });
+        }
+        if control > qubit_count {
+            return Err(QubeError::QubitOutOfRange { index: control, max: qubit_count });
+        }
+        if target > qubit_count {
+            return Err(QubeError::QubitOutOfRange { index: target, max: qubit_count });
+        }
+
+        let actual_ctl = control.saturating_sub(1);
+        let actual_tgt = target.saturating_sub(1);
+
+        let tmp_amps = self.amplitudes.vector.clone();
+
+        for i in 0..tmp_amps.len() {
+            if i & (1 << actual_ctl) == 0 {
+                let other_index = i ^ (1 << actual_tgt);
+                self.amplitudes.vector[i] = tmp_amps[other_index];
+            }
+        }
+
+        Ok(())
+    }
+
+    // controlled Z gate
+    #[allow(non_snake_case)]
+    pub fn CZ(&mut self, control: usize, target: usize) -> Result<(), QubeError> {
+        let qubit_count = self.qubit_count();
+        if control == target {
+            return Err(QubeError::ControlEqualsTarget { index: control });
+        }
+        if control > qubit_count {
+            return Err(QubeError::QubitOutOfRange { index: control, max: qubit_count });
+        }
+        if target > qubit_count {
+            return Err(QubeError::QubitOutOfRange { index: target, max: qubit_count })
+        }
+
+        let actual_ctl = control.saturating_sub(1);
+        let actual_tgt = control.saturating_sub(1);
+
+        for i in 0..self.amplitudes.len() {
+            if i & (1 << actual_ctl) > 0 && i & (1 << actual_tgt) > 0 {
+                self.amplitudes.vector[i] = -self.amplitudes.vector[i];
             }
         }
 
@@ -224,9 +282,9 @@ impl QuantumCircuit {
             return Err(QubeError::QubitOutOfRange { index: target, max: qubit_count });
         }
 
-        let actual_ctl1 = qubit_count.saturating_sub(control1);
-        let actual_ctl2 = qubit_count.saturating_sub(control2);
-        let actual_tgt = qubit_count.saturating_sub(target);
+        let actual_ctl1 = control1.saturating_sub(1);
+        let actual_ctl2 = control2.saturating_sub(1);
+        let actual_tgt = target.saturating_sub(1);
 
         let tmp_amps = self.amplitudes.vector.clone();
 
