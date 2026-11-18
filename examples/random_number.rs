@@ -9,7 +9,7 @@ fn main() {
         let _ = qc.H(1);
         let bit = qc.M();
 
-        random_number += (bit[0] as u64) << i;
+        random_number += (bit.1 as u64) << i;
     }
 
     println!("Random number generated: {}", random_number);

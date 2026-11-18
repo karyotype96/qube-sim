@@ -363,7 +363,7 @@ impl QuantumCircuit {
         after all gates have been applied to the qubits in the circuit.
     */
     #[allow(non_snake_case)]
-    pub fn M(&mut self) -> Vec<u8> {
+    pub fn M(&mut self) -> (usize, u16) {
         let mut weights: Vec<u64> = self.amplitudes.vector
             .iter()
             .map(|x| ((*x * *x).modulus() * 1_000_000.0) as u64)
@@ -384,16 +384,17 @@ impl QuantumCircuit {
             }
         }
 
-        let mut measured: Vec<u8> = Vec::new();
+        // let mut measured: Vec<u8> = Vec::new();
+        let mut measured: u16 = 0;
         let count = self.qubit_count();
 
         for i in 0..count {
-            measured.push(if option & (1 << i) > 0 { 1 } else { 0 });
-            self.qubits[i].0 = if measured[i] == 1 { QubitState::Ket1 } else { QubitState::Ket0 }
+            measured += (option & (1 << i)) as u16;
+            self.qubits[i].0 = if measured & (1 << i) > 0 { QubitState::Ket1 } else { QubitState::Ket0 };
+            // measured.push(if option & (1 << i) > 0 { 1 } else { 0 });
+            // self.qubits[i].0 = if measured[i] == 1 { QubitState::Ket1 } else { QubitState::Ket0 }
         }
 
-        measured.reverse();
-
-        measured
+        (self.qubit_count(), measured)        
     }
 }

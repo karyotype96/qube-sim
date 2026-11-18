@@ -1,26 +1,49 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::{Arc, mpsc}, thread};
 
 pub struct Sampler;
 
 impl Sampler {
-    pub fn sample_probabilities(f: &impl Fn() -> Vec<u8>, count: usize) -> HashMap<u8, u64> {
-        let mut sampled_values: HashMap<u8, u64> = HashMap::new();
+    pub fn sample_probabilities(f: &Arc<dyn Fn() -> (usize, u16) + Sync + Send + 'static>, count: usize, thread_count: usize) -> HashMap<u16, u64> {
+        let mut sampled_values: HashMap<u16, u64> = HashMap::new();
 
-        for _ in 0..count {
-            let sample = f();
-            let index = sample.iter()
-                .enumerate()
-                .fold(0, |acc, (index, &value)| acc + (1 << index) * value);
-            
-            *sampled_values.entry(index).or_insert(0) += 1;
+        let (tx, rx) = mpsc::channel();
+        let mut handles = vec![];
+
+        let chunk_size = count / thread_count;
+        for i in 0..thread_count {
+            let start_chunk = i * chunk_size;
+            let end_chunk = start_chunk + chunk_size;
+
+            let tx_clone = tx.clone();
+            let f = f.clone();
+
+            let handle = thread::spawn(move || {
+                for _ in start_chunk..end_chunk {
+                    let sample = f();
+                    
+                    tx_clone.send(sample).unwrap();
+                }
+            });
+
+            handles.push(handle);
+        }
+
+        drop(tx);
+
+        for received in rx {
+            *sampled_values.entry(received.1).or_insert(0) += 1;
+        }
+
+        for handle in handles {
+            handle.join().unwrap();
         }
 
         sampled_values
     }
 
-    pub fn print_samples(f: impl Fn() -> Vec<u8>, count: usize) {
-        let probs = Self::sample_probabilities(&f, count);
-        let qubit_count = f().len();
+    pub fn print_samples(f: Arc<dyn Fn() -> (usize, u16) + Sync + Send + 'static>, count: usize, thread_count: usize) {
+        let probs = Self::sample_probabilities(&f, count, thread_count);
+        let qubit_count = f().0;
 
         let mut sorted_keys: Vec<_> = probs.keys().collect();
         sorted_keys.sort();
