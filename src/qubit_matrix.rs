@@ -1,6 +1,6 @@
 use std::{f64::consts::SQRT_2, fmt::{Debug, Write}, ops::Mul};
 
-use crate::{complex::{Complex, QFloat}, qubit};
+use crate::{complex::{Complex, QFloat}};
 
 pub struct QubitMatrix {
     pub matrix: Vec<Vec<Complex>>
@@ -249,6 +249,17 @@ impl QubitMatrix {
         s
     }
 
+    fn base_sqrtx_matrix() -> Self {
+        let mut sqrtx = QubitMatrix::new(2);
+
+        sqrtx.matrix[0][0] = Complex::new(1.0, 1.0) / 2.0;
+        sqrtx.matrix[0][1] = Complex::new(1.0, -1.0) / 2.0;
+        sqrtx.matrix[1][0] = Complex::new(1.0, -1.0) / 2.0;
+        sqrtx.matrix[1][1] = Complex::new(1.0, 1.0) / 2.0;
+
+        sqrtx
+    }
+
     fn base_rx_matrix(theta: QFloat) -> Self {
         let mut rx = QubitMatrix::new(2);
 
@@ -323,6 +334,11 @@ impl QubitMatrix {
     pub fn s_matrix(qubit_count: usize, qubit_index: usize) -> Self {
         let s = Self::base_s_matrix();
         Self::get_full_matrix(s, qubit_count, qubit_index)
+    }
+
+    pub fn sqrtx_matrix(qubit_count: usize, qubit_index: usize) -> Self {
+        let sqrtx = Self::base_sqrtx_matrix();
+        Self::get_full_matrix(sqrtx, qubit_count, qubit_index)
     }
 
     pub fn rx_matrix(qubit_count: usize, qubit_index: usize, theta: QFloat) -> Self {

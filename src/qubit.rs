@@ -97,6 +97,8 @@ impl QuantumCircuit {
         Ok(())
     }
 
+    // S gate and its aliases
+    #[allow(non_snake_case)]
     pub fn S(&mut self, qubit_index: usize) -> Result<(), QubeError> {
         if qubit_index > self.qubit_count() {
             return Err(QubeError::QubitOutOfRange { index: qubit_index, max: self.qubit_count() })
@@ -108,7 +110,30 @@ impl QuantumCircuit {
 
         Ok(())
     }
+    #[allow(non_snake_case)]
+    pub fn SqrtZ(&mut self, qubit_index: usize) -> Result<(), QubeError> {
+        self.S(qubit_index)
+    }
 
+    // Sqrt(X) gate and its aliases
+    #[allow(non_snake_case)]
+    pub fn SqrtX(&mut self, qubit_index: usize) -> Result<(), QubeError> {
+        if qubit_index > self.qubit_count() {
+            return Err(QubeError::QubitOutOfRange { index: qubit_index, max: self.qubit_count() });
+        }
+
+        let sqrtx = QubitMatrix::sqrtx_matrix(self.qubit_count(), qubit_index);
+
+        let _ = self.amplitudes.apply_matrix(sqrtx);
+
+        Ok(())
+    }
+    #[allow(non_snake_case)]
+    pub fn SX(&mut self, qubit_index: usize) -> Result<(), QubeError> {
+        self.SqrtX(qubit_index)
+    }
+
+    // Rotational matrices
     #[allow(non_snake_case)]
     pub fn Rx(&mut self, qubit_index: usize, theta: QFloat) -> Result<(), QubeError> {
         if qubit_index > self.qubit_count() {
