@@ -79,7 +79,7 @@ impl PartialEq for QubitMatrix {
 }
 
 impl QubitMatrix {
-    // note: all qubit matrices are NxN in size
+    /// Creates a new, square QubitMatrix of length ```size```.
     pub fn new(size: usize) -> Self {
         let mut matrix: Vec<Vec<Complex>> = Vec::new();
 
@@ -96,10 +96,12 @@ impl QubitMatrix {
         }
     }
 
+    /// Returns the length/height of a QubitMatrix.
     pub fn get_size(&self) -> usize {
         self.matrix.len()
     }
 
+    /// Returns an exact copy of a QubitMatrix.
     pub fn copy(&self) -> Self {
         let mut m = Self::new(self.get_size());
 
@@ -112,7 +114,9 @@ impl QubitMatrix {
         m
     }
 
-    #[allow(unused)]
+    /// Creates a matrix with the rows and columns of the original swapped. 
+    /// Because the matrix is always square, it can always be safely 
+    /// multiplied by itself.
     pub fn transpose(&self) -> Self {
         let mut transposed = Self::new(self.get_size());
 
@@ -125,6 +129,8 @@ impl QubitMatrix {
         transposed
     }
 
+    /// Creates a new matrix with each entry set to the complex conjugate
+    /// of the original.
     pub fn conjugate(&self) -> Self {
         let mut conjugated = Self::new(self.get_size());
 
@@ -137,15 +143,24 @@ impl QubitMatrix {
         conjugated
     }
 
+    /// Returns the conjugate transpose, also called the Hermitian adjoint
+    /// or dagger operation, of the original QubitMatrix.
     pub fn adjoint(&self) -> Self {
         self.transpose().conjugate()
     }
 
+    /// Returns true if the QubitMatrix is unitary. A QubitMatrix is unitary
+    /// if, and only if, the matrix multiplied by its own adjoint is equal
+    /// to the identity matrix of the same size.
     pub fn is_unitary(&self) -> bool {
         self.copy() * self.adjoint() == Self::identity_matrix(self.get_size())
     }
 
     // static methods
+
+    /// Returns the tensor product of two QubitMatrices, also known as the
+    /// Kronecker product. This can be done on two matrices of arbitrary size,
+    /// and results in a block matrix.
     pub fn tensor_product(matrix1: Self, matrix2: Self) -> Self {
         let size = matrix1.get_size() * matrix2.get_size();
 
@@ -167,6 +182,7 @@ impl QubitMatrix {
         new_matrix
     }
 
+    /// Returns an identity matrix of ```size``` length and height.
     pub fn identity_matrix(size: usize) -> Self {
         let mut new_matrix = QubitMatrix::new(size);
 
@@ -180,7 +196,7 @@ impl QubitMatrix {
     }
 
     // base matrices go here - these should be private
-    pub fn base_global_phase_matrix(theta: QFloat) -> Self {
+    fn base_global_phase_matrix(theta: QFloat) -> Self {
         let mut new_matrix = QubitMatrix::identity_matrix(2);
 
         let phase_factor = Complex::new(0.0, theta).exp();
@@ -294,7 +310,7 @@ impl QubitMatrix {
     }
 
     // cut down on some boilerplate
-    pub fn get_full_matrix(m: Self, qubit_count: usize, qubit_index: usize) -> Self {
+    fn get_full_matrix(m: Self, qubit_count: usize, qubit_index: usize) -> Self {
         let cur_matrix = if qubit_count == qubit_index { m.copy() } else { Self::identity_matrix(2) };
 
         if qubit_count <= 1 {
@@ -306,59 +322,78 @@ impl QubitMatrix {
     }
 
     // public matrix functions (use in conjunction with base ones)
+
+    /// Returns a global phase matrix applied to the qubit at index ```qubit_index```
+    /// with angle "theta" (θ). On a 2x2 matrix, this the same as multiplying the
+    /// size 2 identity matrix by e^iθ.
     pub fn global_phase_matrix(qubit_count: usize, qubit_index: usize, theta: QFloat) -> Self {
         let ph = Self::base_global_phase_matrix(theta);
         Self::get_full_matrix(ph, qubit_count, qubit_index)
     }
 
+    /// Pauli X matrix applied to the qubit at ```qubit_index```.
     pub fn x_matrix(qubit_count: usize, qubit_index: usize) -> Self {
         let actual_index = qubit_count - qubit_index + 1;
         let x = Self::base_x_matrix();
         Self::get_full_matrix(x, qubit_count, actual_index)
     }
 
+    /// Pauli Y matrix applied to the qubit at ```qubit_index```.
     pub fn y_matrix(qubit_count: usize, qubit_index: usize) -> Self {
         let actual_index = qubit_count - qubit_index + 1;
         let y = Self::base_y_matrix();
         Self::get_full_matrix(y, qubit_count, actual_index)
     }
 
+    /// Pauli Z matrix applied to the qubit at ```qubit_index```
     pub fn z_matrix(qubit_count: usize, qubit_index: usize) -> Self {
         let actual_index = qubit_count - qubit_index + 1;
         let z = Self::base_z_matrix();
         Self::get_full_matrix(z, qubit_count, actual_index)
     }
 
+    /// A matrix that applies a Hadamard operation to the qubit at index
+    /// ```qubit_index```.
     pub fn h_matrix(qubit_count: usize, qubit_index: usize) -> Self {
         let actual_index = qubit_count - qubit_index + 1;
         let h = Self::base_h_matrix();
         Self::get_full_matrix(h, qubit_count, actual_index)
     }
 
+    /// A matrix that applies an S matrix (also known as a Sqrt(Z) matrix)
+    /// to the qubit at index ```qubit_index```.
     pub fn s_matrix(qubit_count: usize, qubit_index: usize) -> Self {
         let actual_index = qubit_count - qubit_index + 1;
         let s = Self::base_s_matrix();
         Self::get_full_matrix(s, qubit_count, actual_index)
     }
 
+    /// A matrix that applies a Sqrt(X) matrix to the qubit at index 
+    /// ```qubit_index```
     pub fn sqrtx_matrix(qubit_count: usize, qubit_index: usize) -> Self {
         let actual_index = qubit_count - qubit_index + 1;
         let sqrtx = Self::base_sqrtx_matrix();
         Self::get_full_matrix(sqrtx, qubit_count, actual_index)
     }
 
+    /// A rotation matrix about the x-axis, applied to the qubit at index
+    /// ```qubit_index``` and rotated by a factor of ```theta```.
     pub fn rx_matrix(qubit_count: usize, qubit_index: usize, theta: QFloat) -> Self {
         let actual_index = qubit_count - qubit_index + 1;
         let rx = Self::base_rx_matrix(theta);
         Self::get_full_matrix(rx, qubit_count, actual_index)
     }
 
+    /// A rotation matrix about the y-axis, applied to the qubit at index
+    /// ```qubit_index``` and rotated by a factor of ```theta```.
     pub fn ry_matrix(qubit_count: usize, qubit_index: usize, theta: QFloat) -> Self {
         let actual_index = qubit_count - qubit_index + 1;
         let ry = Self::base_ry_matrix(theta);
         Self::get_full_matrix(ry, qubit_count, actual_index)
     }
 
+    /// A rotation matrix about the z-axis, applied to the qubit at index
+    /// ```qubit_index``` and rotated by a factor of ```theta```.
     pub fn rz_matrix(qubit_count: usize, qubit_index: usize, theta: QFloat) -> Self {
         let actual_index = qubit_count - qubit_index + 1;
         let rz = Self::base_rz_matrix(theta);

@@ -1,21 +1,57 @@
-use snafu::Snafu;
+use std::fmt;
+use std::{fmt::{Debug}};
 
 pub type Result<T> = std::result::Result<T, QubeError>;
 
-#[derive(Debug, Snafu)]
+/// A set of errors that may be returned by qubit operations.
 pub enum QubeError {
-    #[snafu(display("Attempted to access element {}, above qubit count {}", index, max))]
+    /// Returned when an operation attempts to access a qubit
+    /// higher than the qubit count of the circuit.
     QubitOutOfRange { index: usize, max: usize },
-
-    #[snafu(display("Control index equals target index: {}", index))]
+    /// Returned when a CNOT operation uses the same index for
+    /// the control qubit as the target qubit.
     ControlEqualsTarget { index: usize },
-
-    #[snafu(display("CCNOT gate control index 1 equals control index 2: {}", index))]
+    /// Returned when a CCNOT operation uses the same index for
+    /// both control qubits.
     Control1EqualsControl2 { index: usize },
-
-    #[snafu(display("One-qubit custom gate matrix is not 2x2"))]
+    /// Returned when a custom gate entered into the Custom1
+    /// method is not a 2x2 matrix.
     OneQubitCustomGateNot2x2,
-
-    #[snafu(display("One-qubit custom gate matrix not unitary"))]
+    /// Returned when a custom gate entered into the Custom1
+    /// method is not unitary - that is, the matrix times its
+    /// adjoint is not the identity matrix.
     OneQubitCustomGateNotUnitary,
+    /// Returned when the two qubits being swapped in the SWAP
+    /// methods have the same index
+    SwapSameQubit,
+}
+
+impl fmt::Display for QubeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match *self {
+            QubeError::QubitOutOfRange { index, max } => format!("Attempted to access element {}, above qubit count {}", index, max),
+            QubeError::ControlEqualsTarget { index } => format!("Control index equals target index: {}", index),
+            QubeError::Control1EqualsControl2 { index } => format!("CCNOT gate control index 1 equal control index 2: {}", index),
+            QubeError::OneQubitCustomGateNot2x2 => format!("One-qubit custom matrix gate is not 2x2"),
+            QubeError::OneQubitCustomGateNotUnitary => format!("One-qubit custom gate matrix not unitary"),
+            QubeError::SwapSameQubit => format!("Attempted to use SWAP on a qubit with itself")
+        };
+
+        write!(f, "{}", s)
+    }
+}
+
+impl Debug for QubeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match *self {
+            QubeError::QubitOutOfRange { index, max } => format!("Attempted to access element {}, above qubit count {}", index, max),
+            QubeError::ControlEqualsTarget { index } => format!("Control index equals target index: {}", index),
+            QubeError::Control1EqualsControl2 { index } => format!("CCNOT gate control index 1 equal control index 2: {}", index),
+            QubeError::OneQubitCustomGateNot2x2 => format!("One-qubit custom matrix gate is not 2x2"),
+            QubeError::OneQubitCustomGateNotUnitary => format!("One-qubit custom gate matrix not unitary"),
+            QubeError::SwapSameQubit => format!("Attempted to use SWAP on a qubit with itself")
+        };
+
+        write!(f, "Error: {}", s)
+    }
 }

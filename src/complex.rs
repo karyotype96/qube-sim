@@ -1,23 +1,17 @@
-use core::fmt;
+use std::fmt;
 use std::{f64::consts::E, fmt::Write, ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign}};
 
-// to make it clear this type must always be used for complex numbers
 pub type QFloat = f64;
 
-// Yes, I REALIZE that there is already a complex-num crate, but I refuse
-// to use it because I want to learn as much as I can about the mathematics
-// behind quantum computing.
+/// Complex number consisting of two QFloats (f64)
 #[derive(Copy, Clone)]
 pub struct Complex {
+    /// Real component
     pub re: QFloat,
+    /// Imaginary component 
     pub im: QFloat,
 }
 
-/*
-    Adding two complex numbers is simple:
-    - add the real components and return them as the real component of a new complex number
-    - do the same as above for the imaginary components
-*/
 impl Add for Complex {
     type Output = Self;
 
@@ -25,6 +19,7 @@ impl Add for Complex {
         Self { re: self.re + rhs.re, im: self.im + rhs.im }
     }
 }
+
 impl Add<QFloat> for Complex {
     type Output = Self;
 
@@ -45,7 +40,6 @@ impl AddAssign<QFloat> for Complex {
     }
 }
 
-// Subtraction works much the same way as adding two complex numbers
 impl Sub for Complex {
     type Output = Self;
 
@@ -73,7 +67,6 @@ impl SubAssign<QFloat> for Complex {
     }
 }
 
-// Simply make both components negative
 impl Neg for Complex {
     type Output = Self;
 
@@ -110,6 +103,7 @@ impl Mul for Complex {
         }
     }
 }
+
 impl Mul<QFloat> for Complex {
     type Output = Self;
 
@@ -252,28 +246,28 @@ impl Complex {
         Self { re, im }
     }
 
-    // Imagine that the complex number is represented by a vector.
-    // The modulus of that complex number would be the same as the
-    // magnitude of the vector, that is:
-
-    // modulus(a + bi) = sqrt(a^2 + b^2)
+    /// Returns the absolute value of the complex number, i.e. its
+    /// distance away from zero. This is done using the Pythagorean
+    /// theorem -- for instance, the modulus of (a + bi) = sqrt(a^2 + b^2).
     pub fn modulus(&self) -> QFloat {
         (self.re*self.re + self.im*self.im).sqrt()
     }
 
-    // Normalize the complex number, setting its modulus to 1
-    #[allow(unused)]
+    /// Returns a normalized version of this complex number -- that is,
+    /// the number is divided by its modulus so its absolute value becomes
+    /// 1.
     pub fn norm(&self) -> Self {
         Self { re: self.re / self.modulus(), im: self.im / self.modulus() }
     }
 
-    // Invert the imaginary component of the number
-    #[allow(unused)]
+    /// Returns the same complex number, but with the sign of the imaginary
+    /// component flipped.
     pub fn conjugate(&self) -> Self {
         Self { re: self.re, im: -self.im }
     }
 
-    // raise e (2.71828...) to the power of the number
+    /// Returns e (2.71828...) to the power of the complex number. If we
+    /// have a complex number z = (a + bi), e^z = e^a + cos(b) + i*sin(b).
     pub fn exp(&self) -> Self {
         let re = E.powf(self.re);
         let im = Complex::new(self.im.cos(), self.im.sin());

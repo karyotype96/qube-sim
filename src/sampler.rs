@@ -3,7 +3,8 @@ use std::{collections::HashMap, sync::{Arc, mpsc}, thread};
 pub struct Sampler;
 
 impl Sampler {
-    pub fn sample_probabilities(f: &Arc<dyn Fn() -> (usize, u16) + Sync + Send + 'static>, count: usize, thread_count: usize) -> HashMap<u16, u64> {
+    
+    fn sample_probabilities(f: &Arc<dyn Fn() -> (usize, u16) + Sync + Send + 'static>, count: usize, thread_count: usize) -> HashMap<u16, u64> {
         let mut sampled_values: HashMap<u16, u64> = HashMap::new();
 
         let (tx, rx) = mpsc::channel();
@@ -41,6 +42,11 @@ impl Sampler {
         sampled_values
     }
 
+    /// Returns the (rough) probability distribution of a quantum circuit.
+    /// The quantum circuit here is represented by an ```Arc``` containing
+    /// a closure that returns the result of the ```M``` method on a
+    /// ```QuantumCircuit```, sampling the results of the computation
+    /// ```count``` times on ```thread_count``` parallel threads.
     pub fn print_samples(f: Arc<dyn Fn() -> (usize, u16) + Sync + Send + 'static>, count: usize, thread_count: usize) {
         let probs = Self::sample_probabilities(&f, count, thread_count);
         let qubit_count = f().0;

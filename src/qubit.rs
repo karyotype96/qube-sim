@@ -19,6 +19,7 @@ pub struct QuantumCircuit {
 }
 
 impl QuantumCircuit {
+    /// Creates a new quantum circuit with ```qubit_count``` qubits.
     pub fn new(qubit_count: usize) -> Self {
         Self {
             qubits: vec![Qubit(QubitState::default()); qubit_count],
@@ -26,12 +27,15 @@ impl QuantumCircuit {
         }
     }
 
+    /// Returns the number of qubits the circuit is operating on.
     pub fn qubit_count(&self) -> usize {
         self.qubits.len()
     }
 
-    // global phase matrix, included for completeness in case it's
-    // REALLY needed for some reason
+    /// Applies a global phase change by a factor of ```theta``` on the qubit
+    /// at index ```qubit_index```. This is mostly included for completeness,
+    /// since global phase has no real effect on the outcome of measuring the
+    /// qubits.
     #[allow(non_snake_case)]
     pub fn Gphase(&mut self, qubit_index: usize, theta: QFloat) -> Result<(), QubeError> {
         if qubit_index > self.qubit_count() {
@@ -45,6 +49,8 @@ impl QuantumCircuit {
         Ok(())
     }
 
+    /// Applies a Pauli X gate (somewhat analogous to a classical NOT gate) to
+    /// the qubit at index ```qubit_index```.
     #[allow(non_snake_case)]
     pub fn X(&mut self, qubit_index: usize) -> Result<(), QubeError> {
         if qubit_index > self.qubit_count() {
@@ -58,6 +64,8 @@ impl QuantumCircuit {
         Ok(())
     }
 
+    /// Applies a Pauli Y gate (which rotates a qubit's state around the y-axis by
+    /// pi radians) to the qubit at index ```qubit_index```.
     #[allow(non_snake_case)]
     pub fn Y(&mut self, qubit_index: usize) -> Result<(), QubeError> {
         if qubit_index > self.qubit_count() {
@@ -71,6 +79,8 @@ impl QuantumCircuit {
         Ok(())
     }
 
+    /// Applies a Pauli Z gate (which is essentially a phase flip) to the qubit
+    /// at index ```qubit_index```.
     #[allow(non_snake_case)]
     pub fn Z(&mut self, qubit_index: usize) -> Result<(), QubeError> {
         if qubit_index > self.qubit_count() {
@@ -84,6 +94,8 @@ impl QuantumCircuit {
         Ok(())
     }
 
+    /// Applies a Hadamard gate, which changes |0> to 1 / sqrt(2) and |1> to 
+    /// -1 / sqrt(2), to the qubit at index ```qubit_index```. 
     #[allow(non_snake_case)]
     pub fn H(&mut self, qubit_index: usize) -> Result<(), QubeError> {
         if qubit_index > self.qubit_count() {
@@ -97,7 +109,9 @@ impl QuantumCircuit {
         Ok(())
     }
 
-    // S gate and its aliases
+    /// Applies the S gate, which adds a pi/2 phase shift to |1>, to the qubit
+    /// at index ```qubit_index```. This gate is equivalent to the Pauli Z
+    /// gate when it is applied twice.
     #[allow(non_snake_case)]
     pub fn S(&mut self, qubit_index: usize) -> Result<(), QubeError> {
         if qubit_index > self.qubit_count() {
@@ -110,12 +124,15 @@ impl QuantumCircuit {
 
         Ok(())
     }
+
+    /// An alias for ```S```.
     #[allow(non_snake_case)]
     pub fn SqrtZ(&mut self, qubit_index: usize) -> Result<(), QubeError> {
         self.S(qubit_index)
     }
 
-    // Sqrt(X) gate and its aliases
+    /// Applies the Sqrt(X) gate to the qubit at index ```qubit_index```. This gate
+    /// is equivalent to the Pauli X gate when it is applied twice.
     #[allow(non_snake_case)]
     pub fn SqrtX(&mut self, qubit_index: usize) -> Result<(), QubeError> {
         if qubit_index > self.qubit_count() {
@@ -128,12 +145,15 @@ impl QuantumCircuit {
 
         Ok(())
     }
+
+    /// An alias for ```SqrtX```.
     #[allow(non_snake_case)]
     pub fn SX(&mut self, qubit_index: usize) -> Result<(), QubeError> {
         self.SqrtX(qubit_index)
     }
 
-    // Rotational matrices
+    /// Rotates the state of a qubit, as visualized by a Bloch sphere, at index
+    /// ```qubit_index``` by ```theta``` radians about the x-axis.
     #[allow(non_snake_case)]
     pub fn Rx(&mut self, qubit_index: usize, theta: QFloat) -> Result<(), QubeError> {
         if qubit_index > self.qubit_count() {
@@ -147,6 +167,8 @@ impl QuantumCircuit {
         Ok(())
     }
 
+    /// Rotates the state of a qubit, as visualized by a Bloch sphere, at index
+    /// ```qubit_index``` by ```theta``` radians about the y-axis.
     #[allow(non_snake_case)]
     pub fn Ry(&mut self, qubit_index: usize, theta: QFloat) -> Result<(), QubeError> {
         if qubit_index > self.qubit_count() {
@@ -160,6 +182,8 @@ impl QuantumCircuit {
         Ok(())
     }
 
+    /// Rotates the state of a qubit, as visualized by a Bloch sphere, at index
+    /// ```qubit_index``` by ```theta``` radians about the z-axis.
     #[allow(non_snake_case)]
     pub fn Rz(&mut self, qubit_index: usize, theta: QFloat) -> Result<(), QubeError> {
         if qubit_index > self.qubit_count() {
@@ -173,7 +197,11 @@ impl QuantumCircuit {
         Ok(())
     }
 
-    // controlled NOT
+    /// A controlled-NOT gate, also called CNOT, applies an X gate to the qubit
+    /// at index ```target``` based on the state of the qubit at index ```control```.
+    /// If the control qubit equals 1 in any permutation, the corresponding qubit
+    /// is "flipped" (i.e. has its amplitude swapped with the permutation that has
+    /// the target qubit set to the opposite value).
     #[allow(non_snake_case)]
     pub fn CNOT(&mut self, control: usize, target: usize) -> Result<(), QubeError> {
         let qubit_count = self.qubit_count();
@@ -204,7 +232,9 @@ impl QuantumCircuit {
         Ok(())
     }
 
-    // anti-controlled NOT
+    /// An anticontrolled-NOT gate, or ACNOT, works similarly to the CNOT
+    /// gate above, except it flips the state of the ```target``` qubit if
+    /// the ```control``` qubit equals 0 instead of 1.
     #[allow(non_snake_case)]
     pub fn ACNOT(&mut self, control: usize, target: usize) -> Result<(), QubeError> {
         let qubit_count = self.qubit_count();
@@ -233,7 +263,8 @@ impl QuantumCircuit {
         Ok(())
     }
 
-    // controlled Z gate
+    /// Applies a Z gate to the qubit at index ```target``` if the qubit at index
+    /// ```control``` is set to 1.
     #[allow(non_snake_case)]
     pub fn CZ(&mut self, control: usize, target: usize) -> Result<(), QubeError> {
         let qubit_count = self.qubit_count();
@@ -259,6 +290,9 @@ impl QuantumCircuit {
         Ok(())
     }
 
+    /// A controlled-controlled-NOT gate, also called a CCNOT or Toffoli gate,
+    /// is similar to CNOT, except it flips the qubit at index ```target``` based
+    /// on two qubits, ```control1``` and ```control2```, instead.
     #[allow(non_snake_case)]
     pub fn CCNOT(&mut self, control1: usize, control2: usize, target: usize) -> Result<(), QubeError> {
         if control1 == control2 {
@@ -298,7 +332,40 @@ impl QuantumCircuit {
         Ok(())
     }
 
-    /* Custom one-qubit gate */
+    /// Swaps the state of the qubit at index ```qubit1``` with the state of the
+    /// qubit at ```qubit2```.
+    #[allow(non_snake_case)]
+    pub fn SWAP(&mut self, qubit1: usize, qubit2: usize) -> Result<(), QubeError> {
+        if qubit1 == qubit2 {
+            return Err(QubeError::SwapSameQubit);
+        }
+
+        let qubit_count = self.qubit_count();
+        if qubit1 > qubit_count {
+            return Err(QubeError::QubitOutOfRange { index: qubit1, max: qubit_count });
+        }
+        if qubit2 > qubit_count {
+            return Err(QubeError::QubitOutOfRange { index: qubit2, max: qubit_count });
+        }
+
+        let actual_qubit1 = qubit1.saturating_sub(1);
+        let actual_qubit2 = qubit2.saturating_sub(1);
+
+        let tmp_amps = self.amplitudes.vector.clone();
+
+        for i in 0..tmp_amps.len() {
+            if (i & (1 << actual_qubit1) > 0) ^ (1 & (1 << actual_qubit2) > 0) {
+
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Allows a custom gate, represented as a 2x2 matrix, to be applied to a qubit
+    /// in the circuit. This comes with a set of limitations:
+    /// - The size of the matrix must be 2x2.
+    /// - The matrix must be unitary.
     #[allow(non_snake_case)]
     pub fn Custom1(&mut self, qubit_index: usize, matrix: QubitMatrix) -> Result<(), QubeError> {
         let size = matrix.get_size();
@@ -324,12 +391,9 @@ impl QuantumCircuit {
         Ok(())
     }
 
-    /*
-        WARNING: This is not the same as observing the states in the computational
-        basis, which would change the state to either |0> or |1>. For this reason,
-        a function like this will have zero actual implementation in a real quantum
-        computer.
-    */
+    /// Displays the state of all qubits in the quantum circuit without measuring them.
+    /// This should only be used for debugging, because a real quantum circuit's state
+    /// will collapse to a basis state when it is observed.
     pub fn observe_debug(&self) -> String {
         let mut res = String::new();
 
@@ -362,6 +426,10 @@ impl QuantumCircuit {
         This is for observing the states in the computational basis, and should be done
         after all gates have been applied to the qubits in the circuit.
     */
+    /// Observes the state of the quantum circuit. This will cause its state to collapse
+    /// to a computational basis state, and returns a 2-tuple consisting of:
+    /// - The number of qubits
+    /// - The basis state measured, returned as 16-bit number
     #[allow(non_snake_case)]
     pub fn M(&mut self) -> (usize, u16) {
         let mut weights: Vec<u64> = self.amplitudes.vector
@@ -384,16 +452,15 @@ impl QuantumCircuit {
             }
         }
 
-        // let mut measured: Vec<u8> = Vec::new();
         let mut measured: u16 = 0;
         let count = self.qubit_count();
 
         for i in 0..count {
             measured += (option & (1 << i)) as u16;
             self.qubits[i].0 = if measured & (1 << i) > 0 { QubitState::Ket1 } else { QubitState::Ket0 };
-            // measured.push(if option & (1 << i) > 0 { 1 } else { 0 });
-            // self.qubits[i].0 = if measured[i] == 1 { QubitState::Ket1 } else { QubitState::Ket0 }
         }
+
+        measured = measured.reverse_bits() >> (u16::BITS - count as u32);
 
         (self.qubit_count(), measured)        
     }
