@@ -158,10 +158,9 @@ impl QubitMatrix {
 
     // static methods
 
-    /// Returns the tensor product of two QubitMatrices, also known as the
-    /// Kronecker product. This can be done on two matrices of arbitrary size,
-    /// and results in a block matrix.
-    pub fn tensor_product(matrix1: Self, matrix2: Self) -> Self {
+    /// Returns the Kronecker product of two matrices. This can be done on two 
+    /// matrices of arbitrary size, and results in a block matrix.
+    pub fn kronecker_product(matrix1: Self, matrix2: Self) -> Self {
         let size = matrix1.get_size() * matrix2.get_size();
 
         let mat2_size = matrix2.get_size();
@@ -318,7 +317,7 @@ impl QubitMatrix {
         }
 
         let prev_matrix = Self::get_full_matrix(m, qubit_count - 1, qubit_index);
-        Self::tensor_product(prev_matrix, cur_matrix)
+        Self::kronecker_product(prev_matrix, cur_matrix)
     }
 
     // public matrix functions (use in conjunction with base ones)
@@ -431,7 +430,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_tensor_product() {
+    fn test_kronecker_product() {
         let mut m1 = QubitMatrix::new(2);
 
         m1.matrix[0][0] = Complex::new(1.0, 0.0);
@@ -465,6 +464,6 @@ pub mod tests {
         res.matrix[3][2] = Complex::new(28.0, 0.0);
         res.matrix[3][3] = Complex::new(32.0, 0.0);
 
-        assert_eq!(QubitMatrix::tensor_product(m1, m2), res);
+        assert_eq!(QubitMatrix::kronecker_product(m1, m2), res);
     }
 }

@@ -354,8 +354,9 @@ impl QuantumCircuit {
         let tmp_amps = self.amplitudes.vector.clone();
 
         for i in 0..tmp_amps.len() {
-            if (i & (1 << actual_qubit1) > 0) ^ (1 & (1 << actual_qubit2) > 0) {
-
+            if (i & (1 << actual_qubit1) > 0) ^ (i & (1 << actual_qubit2) > 0) {
+                let other_index = (i ^ (1 << actual_qubit1)) ^ (1 << actual_qubit2);
+                self.amplitudes.vector[i] = tmp_amps[other_index];
             }
         }
 
@@ -383,7 +384,7 @@ impl QuantumCircuit {
         for i in 0..self.qubit_count() {
             let m = if qubit_index == i { matrix.copy() } else { QubitMatrix::identity_matrix(size) };
 
-            start_matrix = QubitMatrix::tensor_product(start_matrix, m);
+            start_matrix = QubitMatrix::kronecker_product(start_matrix, m);
         }
 
         let _ = self.amplitudes.apply_matrix(start_matrix);
@@ -463,5 +464,52 @@ impl QuantumCircuit {
         measured = measured.reverse_bits() >> (u16::BITS - count as u32);
 
         (self.qubit_count(), measured)        
+    }
+
+    /// Observes the state of a single qubit. This will cause the state
+    /// of the qubit to collapse to a computational basis state and leave
+    /// the other qubits alone. This will also effectively remove the
+    /// qubit from the circuit.
+    #[allow(non_snake_case)]
+    pub fn Msingle(&mut self, qubit_index: usize) -> bool {
+        let actual_index = qubit_index.saturating_sub(1);
+
+        // The probability that the qubit will measure as 0.
+        let prob1 = self.amplitudes.vector
+            .iter()
+            .enumerate()
+            .fold(0.0, |acc, (i, &x)| { 
+                if i & (1 << actual_index) > 0 { 
+                    acc + (x * x).modulus() 
+                } else {
+                    0.0
+                } 
+            }
+        );
+
+        let r = rand::random_range(0..1_000_000) as usize;
+        let threshold = (prob1 * 1_000_000.0).round() as usize;
+
+        // Measure the value of this one qubit
+        let qubit_state: usize = if r >= threshold { 0 } else { 1 };
+
+        self.qubits.remove(actual_index);
+
+        // Remove any amplitudes from the main amplitude vector if the corresponding state's
+        // qubit does not equal the measured state
+        let mut new_vector = QubitVector::new(2_usize.pow(self.qubit_count() as u32));
+        let mut vector_index = 0;
+        for (i, c) in self.amplitudes.vector.iter().enumerate() {
+            if i & (1 << actual_index) == qubit_state {
+                new_vector.vector[vector_index] = *c;
+                vector_index += 1;
+            }
+        }
+
+        new_vector.normalize();
+
+        self.amplitudes = new_vector;
+
+        qubit_state == 1
     }
 }

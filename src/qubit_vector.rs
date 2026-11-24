@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Write};
 
-use crate::{complex::Complex, qubit_matrix::QubitMatrix};
+use crate::{complex::{Complex, QFloat}, qubit_matrix::QubitMatrix};
 
 pub struct QubitVector {
     pub vector: Vec<Complex>
@@ -61,6 +61,19 @@ impl QubitVector {
 
     pub fn len(&self) -> usize {
         self.vector.len()
+    }
+
+    pub fn normalize(&mut self) {
+        let len: QFloat = self.vector.iter()
+            .map(|&x| (x * x).modulus())
+            .fold(0.0, |acc, x| acc + x)
+            .sqrt();
+
+        for i in self.vector.iter_mut() {
+            *i = ((*i / len) * 1_000_000.0);
+            i.re = (i.re.floor()) / 1_000_000.0;
+            i.im = (i.im.floor()) / 1_000_000.0;
+        }
     }
 
     pub fn apply_matrix(&mut self, m: QubitMatrix) -> Result<(), ()> {
