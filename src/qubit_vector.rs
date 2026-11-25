@@ -69,12 +69,6 @@ impl QubitVector {
             .fold(0.0, |acc, x| acc + x)
             .sqrt();
 
-        if len == 0.0 {
-            for (i, c) in self.vector.iter_mut().enumerate() {
-                
-            }
-        }
-
         for i in self.vector.iter_mut() {
             *i = (*i / len) * 1_000_000.0;
             i.re = (i.re.round()) / 1_000_000.0;

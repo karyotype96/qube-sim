@@ -1,4 +1,4 @@
-use std::{fmt::Write, ops::Index};
+use std::{fmt::Write};
 
 use crate::{complex::{Complex, QFloat}, error_handling::QubeError, qubit_matrix::QubitMatrix, qubit_vector::QubitVector};
 
