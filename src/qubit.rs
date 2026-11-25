@@ -1,4 +1,4 @@
-use std::fmt::Write;
+use std::{fmt::Write, ops::Index};
 
 use crate::{complex::{Complex, QFloat}, error_handling::QubeError, qubit_matrix::QubitMatrix, qubit_vector::QubitVector};
 
@@ -332,6 +332,42 @@ impl QuantumCircuit {
         Ok(())
     }
 
+    /// A multi-controlled-NOT gate works the same as the CNOT and Toffoli gates,
+    /// except there is no limit on the number of qubits that can be used as the control.
+    #[allow(non_snake_case)]
+    pub fn MCNOT(&mut self, controls: &Vec<usize>, target: usize) -> Result<(), QubeError> {
+        if controls.contains(&target) {
+            return Err(QubeError::ControlsContainTarget { target });
+        }
+
+        let qubit_count = self.qubit_count();
+        for i in 0..controls.len() {
+            if i > qubit_count {
+                return Err(QubeError::QubitOutOfRange { index: i, max: qubit_count });
+            }
+        }
+        if target > qubit_count {
+            return Err(QubeError::QubitOutOfRange { index: target, max: qubit_count });
+        }
+
+        let mask = controls.iter()
+            .fold(0, |acc, &x| {
+                acc | (1 << (x.saturating_sub(1)))
+            }
+        );
+
+        let tmp_amps = self.amplitudes.vector.clone();
+
+        for i in 0..tmp_amps.len() {
+            if i & (mask) == mask {
+                let other_index = i ^ (1 << (target.saturating_sub(1)));
+                self.amplitudes.vector[i] = tmp_amps[other_index];
+            }
+        }
+
+        Ok(())
+    }
+
     /// Swaps the state of the qubit at index ```qubit1``` with the state of the
     /// qubit at ```qubit2```.
     #[allow(non_snake_case)]
@@ -474,15 +510,15 @@ impl QuantumCircuit {
     pub fn Msingle(&mut self, qubit_index: usize) -> bool {
         let actual_index = qubit_index.saturating_sub(1);
 
-        // The probability that the qubit will measure as 0.
+        // The probability that the qubit will measure as 1.
         let prob1 = self.amplitudes.vector
             .iter()
             .enumerate()
-            .fold(0.0, |acc, (i, &x)| { 
+            .fold(0.0, |acc, (i, &x)| {
                 if i & (1 << actual_index) > 0 { 
                     acc + (x * x).modulus() 
                 } else {
-                    0.0
+                    acc
                 } 
             }
         );

@@ -24,6 +24,9 @@ pub enum QubeError {
     /// Returned when the two qubits being swapped in the SWAP
     /// methods have the same index
     SwapSameQubit,
+    /// Returned when the list of controls in the MCNOT method
+    /// contains the index of the target qubit.
+    ControlsContainTarget { target: usize },
 }
 
 impl fmt::Display for QubeError {
@@ -34,7 +37,8 @@ impl fmt::Display for QubeError {
             QubeError::Control1EqualsControl2 { index } => format!("CCNOT gate control index 1 equal control index 2: {}", index),
             QubeError::OneQubitCustomGateNot2x2 => format!("One-qubit custom matrix gate is not 2x2"),
             QubeError::OneQubitCustomGateNotUnitary => format!("One-qubit custom gate matrix not unitary"),
-            QubeError::SwapSameQubit => format!("Attempted to use SWAP on a qubit with itself")
+            QubeError::SwapSameQubit => format!("Attempted to use SWAP on a qubit with itself"),
+            QubeError::ControlsContainTarget { target } => format!("Control qubit list on MCNOT contains target qubit index: {}", target),
         };
 
         write!(f, "{}", s)
@@ -49,7 +53,8 @@ impl Debug for QubeError {
             QubeError::Control1EqualsControl2 { index } => format!("CCNOT gate control index 1 equal control index 2: {}", index),
             QubeError::OneQubitCustomGateNot2x2 => format!("One-qubit custom matrix gate is not 2x2"),
             QubeError::OneQubitCustomGateNotUnitary => format!("One-qubit custom gate matrix not unitary"),
-            QubeError::SwapSameQubit => format!("Attempted to use SWAP on a qubit with itself")
+            QubeError::SwapSameQubit => format!("Attempted to use SWAP on a qubit with itself"),
+            QubeError::ControlsContainTarget { target } => format!("Control qubit list on MCNOT contains target qubit index: {}", target),
         };
 
         write!(f, "Error: {}", s)
