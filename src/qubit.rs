@@ -342,7 +342,7 @@ impl QuantumCircuit {
 
         let qubit_count = self.qubit_count();
         for i in 0..controls.len() {
-            if i > qubit_count {
+            if controls[i] > qubit_count {
                 return Err(QubeError::QubitOutOfRange { index: i, max: qubit_count });
             }
         }
@@ -362,6 +362,40 @@ impl QuantumCircuit {
             if i & (mask) == mask {
                 let other_index = i ^ (1 << (target.saturating_sub(1)));
                 self.amplitudes.vector[i] = tmp_amps[other_index];
+            }
+        }
+
+        Ok(())
+    }
+
+    /// A multi-controlled Z gate works much like the CZ gate, except with
+    /// multiple control qubits, and there is no limit to the number of
+    /// controls that can be used.
+    #[allow(non_snake_case)]
+    pub fn MCZ(&mut self, controls: &Vec<usize>, target: usize) -> Result<(), QubeError> {
+        if controls.contains(&target) {
+            return Err(QubeError::ControlsContainTarget { target });
+        }
+
+        let qubit_count = self.qubit_count();
+        for i in 0..controls.len() {
+            if controls[i] > qubit_count {
+                return Err(QubeError::QubitOutOfRange { index: i, max: qubit_count });
+            }
+        }
+        if target > qubit_count {
+            return Err(QubeError::QubitOutOfRange { index: target, max: qubit_count });
+        }
+
+        let mask = controls.iter()
+            .fold(0, |acc, &x| {
+                acc | (1 << (x.saturating_sub(1)))
+            }
+        );
+
+        for i in 0..self.amplitudes.vector.len() {
+            if i & mask == mask {
+                self.amplitudes.vector[i] = -self.amplitudes.vector[i];
             }
         }
 
@@ -499,7 +533,44 @@ impl QuantumCircuit {
 
         measured = measured.reverse_bits() >> (u16::BITS - count as u32);
 
-        (self.qubit_count(), measured)        
+        (self.qubit_count(), measured)
+    }
+
+    /// Observes the state of the quantum circuit. This is much the same as the standard
+    /// ```M``` method, except the inputs are based on standard little-endian bit order.
+    /// Best used with the ```print_samples_raw_numbers``` method of the ```Sampler```
+    /// struct.
+    #[allow(non_snake_case)]
+    pub fn Mrev(&mut self) -> (usize, u16) {
+        let mut weights: Vec<u64> = self.amplitudes.vector
+            .iter()
+            .map(|x| ((*x * *x).modulus() * 1_000_000.0) as u64)
+            .collect();
+
+        for i in 1..weights.len() {
+            weights[i] += weights[i-1];
+        }
+
+        let prob_value = rand::random_range(0..1_000_000);
+
+        let mut option: usize = weights.len();
+        for (i, &v) in weights.iter().enumerate().rev() {
+            if prob_value < v {
+                option = i;
+            } else {
+                break;
+            }
+        }
+
+        let mut measured: u16 = 0;
+        let count = self.qubit_count();
+
+        for i in 0..count {
+            measured += (option & (1 << i)) as u16;
+            self.qubits[i].0 = if measured & (1 << i) > 0 { QubitState::Ket1 } else { QubitState::Ket0 };
+        }
+
+        (self.qubit_count(), measured)
     }
 
     /// Observes the state of a single qubit. This will cause the state

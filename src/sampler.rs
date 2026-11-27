@@ -61,4 +61,21 @@ impl Sampler {
             println!("\t|{:0qubit_count$b}>: {}%", i, 100.0 * (*value as f64) / (count as f64));
         }
     }
+
+    /// Returns the (rough) probability distribution of a quantum circuit.
+    /// This is the same as the ```print_samples``` method, but it prints
+    /// the raw numbers instead of the qubit strings in kets.
+    pub fn print_samples_raw_numbers(f: Arc<dyn Fn() -> (usize, u16) + Sync + Send + 'static>, count: usize, thread_count: usize) {
+        let probs = Self::sample_probabilities(&f, count, thread_count);
+
+        let mut sorted_keys: Vec<_> = probs.keys().collect();
+        sorted_keys.sort();
+
+        println!("SAMPLE OF QUANTUM CIRCUIT (raw):\n");
+        for i in sorted_keys {
+            let value = probs.get(i).unwrap_or(&0);
+
+            println!("\t[{}]: {}%", i, 100.0 * (*value as f64) / (count as f64));
+        }
+    }
 }
