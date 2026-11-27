@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::{Arc, mpsc}, thread};
+use std::{collections::HashMap, io::{self, Write}, sync::{Arc, mpsc}, thread};
 
 pub struct Sampler;
 
@@ -31,7 +31,13 @@ impl Sampler {
 
         drop(tx);
 
+        let mut total_count: usize = 0;
+        print!("Progress: {}%", total_count * 100 / count);
         for received in rx {
+            total_count += 1;
+            let _ = io::stdout().flush();
+            print!("\rProgress: {}%", total_count * 100 / count);
+
             *sampled_values.entry(received.1).or_insert(0) += 1;
         }
 
@@ -54,7 +60,7 @@ impl Sampler {
         let mut sorted_keys: Vec<_> = probs.keys().collect();
         sorted_keys.sort();
 
-        println!("SAMPLE OF QUANTUM CIRCUIT:\n");
+        println!("\nSAMPLE OF QUANTUM CIRCUIT:\n");
         for i in sorted_keys {
             let value = probs.get(i).unwrap_or(&0);
 
@@ -71,7 +77,7 @@ impl Sampler {
         let mut sorted_keys: Vec<_> = probs.keys().collect();
         sorted_keys.sort();
 
-        println!("SAMPLE OF QUANTUM CIRCUIT (raw):\n");
+        println!("\nSAMPLE OF QUANTUM CIRCUIT (raw):\n");
         for i in sorted_keys {
             let value = probs.get(i).unwrap_or(&0);
 
